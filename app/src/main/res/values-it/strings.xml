@@ -1,0 +1,29 @@
+<resources>
+    <string name="app_name">San Martino Arce</string>
+    <string name="brand_full_title">Le cantine di San Martino</string>
+    <string name="brand_motto">…dove ogni mosto diventa vino…</string>
+    <string name="brand_location">ARCE (FR) — centro storico</string>
+    <string name="events_title">Cantine di San Martino</string>
+    <string name="events_section_upcoming">Prossimi</string>
+    <string name="events_section_past">Edizioni passate</string>
+    <string name="cantine_title">Cantine</string>
+    <string name="cantina_first_participation">Prima partecipazione: %1$d</string>
+    <string name="menu_title_food">Cibo</string>
+    <string name="menu_title_drinks">Bevande</string>
+    <string name="menu_available">Disponibili: %1$d</string>
+    <string name="menu_empty">Nessuna voce disponibile.</string>
+    <string name="action_description">Descrizione</string>
+    <string name="action_open_cantine">Cantine</string>
+    <string name="action_food">Cibo</string>
+    <string name="action_drinks">Bevande</string>
+    <string name="action_location">Posizione</string>
+    <string name="action_close">Chiudi</string>
+    <string name="action_back">Indietro</string>
+    <string name="search_placeholder">Cerca quello che vuoi mangiare!</string>
+    <string name="search_clear_cd">Pulisci ricerca</string>
+    <string name="search_no_results">Nessuna cantina serve qualcosa di simile.</string>
+    <plurals name="search_match_count">
+        <item quantity="one">%1$d piatto trovato</item>
+        <item quantity="other">%1$d piatti trovati</item>
+    </plurals>
+</resources>

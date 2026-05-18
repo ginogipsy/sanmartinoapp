@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls -la \"C:/Projects/san-martino\" 2>&1 | head -50)",
+      "Bash(ls \"C:/Projects/san-martino/\" 2>&1 && mkdir -p \"C:/Projects/san-martino/san-martino-services/api\" \"C:/Projects/san-martino/san-martino-services/events-service/src/main/java/com/ginogipsy/sanmartino/events/api\" \"C:/Projects/san-martino/san-martino-services/events-service/src/main/java/com/ginogipsy/sanmartino/events/domain\" \"C:/Projects/san-martino/san-martino-services/events-service/src/main/java/com/ginogipsy/sanmartino/events/service\" \"C:/Projects/san-martino/san-martino-services/events-service/src/main/resources/db/migration\" \"C:/Projects/san-martino/san-martino-services/events-service/src/test/java/com/ginogipsy/sanmartino/events\" && echo \"Directories created\")",
+      "WebFetch(domain:repo.maven.apache.org)",
+      "WebSearch"
+    ]
+  }
+}

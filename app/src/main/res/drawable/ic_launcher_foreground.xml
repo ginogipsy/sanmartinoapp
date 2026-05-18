@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Wine glass bowl: U-shape opening upward, fits in 72x72 safe zone -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M34,30 L74,30 C74,52 64,66 56,66 C48,66 34,52 34,30 Z" />
+
+    <!-- Wine inside the bowl (slightly transparent red for depth) -->
+    <path
+        android:fillColor="#7A1F1F"
+        android:pathData="M40,32 L68,32 C68,48 60,60 54,60 C48,60 40,48 40,32 Z" />
+
+    <!-- Stem -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M52,66 L60,66 L60,82 L52,82 Z" />
+
+    <!-- Base -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M38,80 L74,80 L74,86 L38,86 Z" />
+
+</vector>
