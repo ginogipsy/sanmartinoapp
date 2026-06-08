@@ -4,7 +4,29 @@
       "Bash(ls -la \"C:/Projects/san-martino\" 2>&1 | head -50)",
       "Bash(ls \"C:/Projects/san-martino/\" 2>&1 && mkdir -p \"C:/Projects/san-martino/san-martino-services/api\" \"C:/Projects/san-martino/san-martino-services/events-service/src/main/java/com/ginogipsy/sanmartino/events/api\" \"C:/Projects/san-martino/san-martino-services/events-service/src/main/java/com/ginogipsy/sanmartino/events/domain\" \"C:/Projects/san-martino/san-martino-services/events-service/src/main/java/com/ginogipsy/sanmartino/events/service\" \"C:/Projects/san-martino/san-martino-services/events-service/src/main/resources/db/migration\" \"C:/Projects/san-martino/san-martino-services/events-service/src/test/java/com/ginogipsy/sanmartino/events\" && echo \"Directories created\")",
       "WebFetch(domain:repo.maven.apache.org)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(export JAVA_HOME=\"C:/Users/franc/.jdks/openjdk-26.0.1\")",
+      "Bash(./mvnw -pl saga-orchestrator,notifications-service clean package -DskipTests -B)",
+      "Bash(\"/c/Windows/System32/taskkill.exe\" //F //IM java.exe)",
+      "Bash(./mvnw -pl events-service spring-boot:run -B)",
+      "Bash(./mvnw -pl stands-service spring-boot:run -B)",
+      "Bash(./mvnw -pl saga-orchestrator spring-boot:run -B)",
+      "Bash(./mvnw -pl notifications-service spring-boot:run -B)",
+      "Bash(curl -s -o /dev/null -w \"events :8081 -> HTTP %{http_code}\\\\n\" --max-time 3 http://localhost:8081/actuator/health)",
+      "Bash(tail -25 /tmp/saga.log)",
+      "Bash(ls \"C:/Users/franc/.m2/repository/org/springframework/boot/\" 2>&1 | grep -i kafka)",
+      "Bash(\"/c/Windows/System32/taskkill.exe\" //F //IM java.exe 2>&1 | head -3 *)",
+      "Bash(export PATH=\"/c/Program Files/Docker/Docker/resources/bin:$PATH\")",
+      "Bash(docker compose *)",
+      "Bash(docker info *)",
+      "Bash(curl -s -o /dev/null -w \"events        :8081 -> HTTP %{http_code}\\\\n\" --max-time 3 http://localhost:8081/actuator/health)",
+      "Bash(curl -s -o /dev/null -w \"stands        :8082 -> HTTP %{http_code}\\\\n\" --max-time 3 http://localhost:8082/actuator/health)",
+      "Bash(curl -s -o /dev/null -w \"saga          :8083 -> HTTP %{http_code}\\\\n\" --max-time 3 http://localhost:8083/actuator/health)",
+      "Bash(curl -s -o /dev/null -w \"notifications :8084 -> HTTP %{http_code}\\\\n\" --max-time 3 http://localhost:8084/actuator/health)",
+      "Bash(tail -30 /tmp/notifications.log)",
+      "Bash(./mvnw -pl notifications-service clean package -DskipTests -B)",
+      "Bash(curl -s -o /dev/null -w \"stands :8082 -> HTTP %{http_code}\\\\n\" --max-time 3 http://localhost:8082/actuator/health)",
+      "Bash(curl -s -o /dev/null -w \"saga :8083 -> HTTP %{http_code}\\\\n\" --max-time 3 http://localhost:8083/actuator/health)"
     ]
   }
 }
