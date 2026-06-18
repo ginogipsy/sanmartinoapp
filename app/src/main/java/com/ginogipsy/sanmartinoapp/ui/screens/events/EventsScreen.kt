@@ -29,11 +29,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ginogipsy.sanmartinoapp.R
 import com.ginogipsy.sanmartinoapp.data.model.Event
+import com.ginogipsy.sanmartinoapp.ui.AppViewModelProvider
 import com.ginogipsy.sanmartinoapp.ui.components.BilingualDescriptionDialog
+import com.ginogipsy.sanmartinoapp.ui.components.ErrorState
 import com.ginogipsy.sanmartinoapp.ui.components.LanguageToggle
+import com.ginogipsy.sanmartinoapp.ui.components.LoadingState
+import com.ginogipsy.sanmartinoapp.ui.state.UiState
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
@@ -41,9 +46,9 @@ import java.util.Locale
 @Composable
 fun EventsScreen(
     onOpenCantine: () -> Unit,
-    viewModel: EventsViewModel = viewModel(),
+    viewModel: EventsViewModel = viewModel(factory = AppViewModelProvider.Factory),
 ) {
-    val state = viewModel.uiState
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var dialogEvent by remember { mutableStateOf<Event?>(null) }
 
     Scaffold(
@@ -54,36 +59,27 @@ fun EventsScreen(
             )
         },
     ) { padding ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = androidx.compose.foundation.layout.PaddingValues(vertical = 16.dp),
-        ) {
-            if (state.upcoming.isNotEmpty()) {
-                item { SectionHeader(stringResource(R.string.events_section_upcoming)) }
-                items(state.upcoming, key = { it.id }) { event ->
-                    EventCard(
-                        event = event,
-                        showCantineButton = true,
-                        onDescription = { dialogEvent = event },
-                        onOpenCantine = onOpenCantine,
-                    )
-                }
-            }
-            if (state.past.isNotEmpty()) {
-                item { SectionHeader(stringResource(R.string.events_section_past)) }
-                items(state.past, key = { it.id }) { event ->
-                    EventCard(
-                        event = event,
-                        showCantineButton = false,
-                        onDescription = { dialogEvent = event },
-                        onOpenCantine = onOpenCantine,
-                    )
-                }
-            }
+        when (val state = uiState) {
+            is UiState.Loading -> LoadingState(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding),
+            )
+            is UiState.Error -> ErrorState(
+                message = state.message,
+                onRetry = viewModel::refresh,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding),
+            )
+            is UiState.Success -> EventsList(
+                data = state.data,
+                onDescription = { dialogEvent = it },
+                onOpenCantine = onOpenCantine,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding),
+            )
         }
     }
 
@@ -93,6 +89,43 @@ fun EventsScreen(
             description = event.description,
             onDismiss = { dialogEvent = null },
         )
+    }
+}
+
+@Composable
+private fun EventsList(
+    data: EventsData,
+    onDescription: (Event) -> Unit,
+    onOpenCantine: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    LazyColumn(
+        modifier = modifier.padding(horizontal = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(vertical = 16.dp),
+    ) {
+        if (data.upcoming.isNotEmpty()) {
+            item { SectionHeader(stringResource(R.string.events_section_upcoming)) }
+            items(data.upcoming, key = { it.id }) { event ->
+                EventCard(
+                    event = event,
+                    showCantineButton = true,
+                    onDescription = { onDescription(event) },
+                    onOpenCantine = onOpenCantine,
+                )
+            }
+        }
+        if (data.past.isNotEmpty()) {
+            item { SectionHeader(stringResource(R.string.events_section_past)) }
+            items(data.past, key = { it.id }) { event ->
+                EventCard(
+                    event = event,
+                    showCantineButton = false,
+                    onDescription = { onDescription(event) },
+                    onOpenCantine = onOpenCantine,
+                )
+            }
+        }
     }
 }
 

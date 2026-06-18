@@ -46,23 +46,30 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ginogipsy.sanmartinoapp.R
 import com.ginogipsy.sanmartinoapp.data.model.Cantina
 import com.ginogipsy.sanmartinoapp.data.model.MenuKind
 import com.ginogipsy.sanmartinoapp.data.search.CantinaSearchResult
+import com.ginogipsy.sanmartinoapp.ui.AppViewModelProvider
 import com.ginogipsy.sanmartinoapp.ui.components.BilingualDescriptionDialog
 import com.ginogipsy.sanmartinoapp.ui.components.CantinaNumberBadge
+import com.ginogipsy.sanmartinoapp.ui.components.ErrorState
 import com.ginogipsy.sanmartinoapp.ui.components.LanguageToggle
+import com.ginogipsy.sanmartinoapp.ui.components.LoadingState
+import com.ginogipsy.sanmartinoapp.ui.state.UiState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CantineScreen(
     onBack: () -> Unit,
     onOpenMenu: (cantinaId: String, kind: MenuKind) -> Unit,
-    viewModel: CantineViewModel = viewModel(),
+    viewModel: CantineViewModel = viewModel(factory = AppViewModelProvider.Factory),
 ) {
     val context = LocalContext.current
+    val resultsState by viewModel.results.collectAsStateWithLifecycle()
+    val query by viewModel.query.collectAsStateWithLifecycle()
     var dialogCantina by remember { mutableStateOf<Cantina?>(null) }
 
     Scaffold(
@@ -81,12 +88,13 @@ fun CantineScreen(
             )
         },
     ) { padding ->
-        Column(modifier = Modifier
-            .fillMaxSize()
-            .padding(padding)) {
-
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding),
+        ) {
             SearchField(
-                query = viewModel.query,
+                query = query,
                 onQueryChange = viewModel::onQueryChange,
                 onClear = viewModel::clearQuery,
                 modifier = Modifier
@@ -94,36 +102,46 @@ fun CantineScreen(
                     .padding(horizontal = 16.dp, vertical = 12.dp),
             )
 
-            val results = viewModel.results
-            if (results.isEmpty()) {
-                Box(
+            when (val state = resultsState) {
+                is UiState.Loading -> LoadingState(modifier = Modifier.fillMaxSize())
+                is UiState.Error -> ErrorState(
+                    message = state.message,
+                    onRetry = viewModel::refresh,
                     modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        text = stringResource(R.string.search_no_results),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(24.dp),
-                    )
-                }
-            } else {
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                    contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 16.dp),
-                ) {
-                    items(results, key = { it.cantina.id }) { result ->
-                        CantinaCard(
-                            result = result,
-                            showMatchCount = viewModel.hasActiveQuery,
-                            onDescription = { dialogCantina = result.cantina },
-                            onFood = { onOpenMenu(result.cantina.id, MenuKind.FOOD) },
-                            onDrinks = { onOpenMenu(result.cantina.id, MenuKind.DRINK) },
-                            onLocation = { openMaps(context, result.cantina) },
-                        )
+                )
+                is UiState.Success -> {
+                    val results = state.data
+                    if (results.isEmpty()) {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text(
+                                text = stringResource(R.string.search_no_results),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(24.dp),
+                            )
+                        }
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = 16.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                            contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 16.dp),
+                        ) {
+                            items(results, key = { it.cantina.id }) { result ->
+                                CantinaCard(
+                                    result = result,
+                                    showMatchCount = query.isNotBlank(),
+                                    onDescription = { dialogCantina = result.cantina },
+                                    onFood = { onOpenMenu(result.cantina.id, MenuKind.FOOD) },
+                                    onDrinks = { onOpenMenu(result.cantina.id, MenuKind.DRINK) },
+                                    onLocation = { openMaps(context, result.cantina) },
+                                )
+                            }
+                        }
                     }
                 }
             }

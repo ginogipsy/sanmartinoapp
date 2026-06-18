@@ -22,6 +22,9 @@
     <string name="search_placeholder">Cerca quello che vuoi mangiare!</string>
     <string name="search_clear_cd">Pulisci ricerca</string>
     <string name="search_no_results">Nessuna cantina serve qualcosa di simile.</string>
+    <string name="state_loading">Caricamento…</string>
+    <string name="state_error_title">Impossibile caricare i dati</string>
+    <string name="action_retry">Riprova</string>
     <plurals name="search_match_count">
         <item quantity="one">%1$d piatto trovato</item>
         <item quantity="other">%1$d piatti trovati</item>

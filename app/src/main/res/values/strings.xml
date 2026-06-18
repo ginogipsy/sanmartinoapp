@@ -22,6 +22,9 @@
     <string name="search_placeholder">Look for something to eat!</string>
     <string name="search_clear_cd">Clear search</string>
     <string name="search_no_results">No stand is serving anything like that.</string>
+    <string name="state_loading">Loading…</string>
+    <string name="state_error_title">Couldn\'t load data</string>
+    <string name="action_retry">Retry</string>
     <plurals name="search_match_count">
         <item quantity="one">%1$d dish matches</item>
         <item quantity="other">%1$d dishes match</item>

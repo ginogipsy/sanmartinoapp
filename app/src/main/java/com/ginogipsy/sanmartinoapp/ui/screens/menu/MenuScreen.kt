@@ -32,12 +32,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ginogipsy.sanmartinoapp.R
 import com.ginogipsy.sanmartinoapp.data.model.MenuItem
 import com.ginogipsy.sanmartinoapp.data.model.MenuKind
 import com.ginogipsy.sanmartinoapp.ui.components.BilingualDescriptionDialog
+import com.ginogipsy.sanmartinoapp.ui.components.ErrorState
 import com.ginogipsy.sanmartinoapp.ui.components.LanguageToggle
+import com.ginogipsy.sanmartinoapp.ui.components.LoadingState
+import com.ginogipsy.sanmartinoapp.ui.state.UiState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -50,10 +54,13 @@ fun MenuScreen(
         key = "menu-$cantinaId-${kind.name}",
         factory = MenuViewModel.factory(cantinaId, kind),
     )
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var dialogItem by remember { mutableStateOf<MenuItem?>(null) }
 
     val titleRes = if (kind == MenuKind.FOOD) R.string.menu_title_food else R.string.menu_title_drinks
-    val cantinaTitle = viewModel.cantina?.let { "${it.number} — ${it.name}" }.orEmpty()
+    val cantinaTitle = (uiState as? UiState.Success<MenuData>)?.data?.cantina
+        ?.let { "${it.number} — ${it.name}" }
+        .orEmpty()
 
     Scaffold(
         topBar = {
@@ -81,29 +88,46 @@ fun MenuScreen(
             )
         },
     ) { padding ->
-        if (viewModel.items.isEmpty()) {
-            Box(
+        when (val state = uiState) {
+            is UiState.Loading -> LoadingState(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(padding),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(stringResource(R.string.menu_empty))
-            }
-        } else {
-            LazyColumn(
+            )
+            is UiState.Error -> ErrorState(
+                message = state.message,
+                onRetry = viewModel::refresh,
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(padding)
-                    .padding(horizontal = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                contentPadding = androidx.compose.foundation.layout.PaddingValues(vertical = 16.dp),
-            ) {
-                items(viewModel.items, key = { it.id }) { item ->
-                    MenuItemCard(
-                        item = item,
-                        onDescription = { dialogItem = item },
-                    )
+                    .padding(padding),
+            )
+            is UiState.Success -> {
+                val items = state.data.items
+                if (items.isEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(padding),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(stringResource(R.string.menu_empty))
+                    }
+                } else {
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(padding)
+                            .padding(horizontal = 16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        contentPadding = androidx.compose.foundation.layout.PaddingValues(vertical = 16.dp),
+                    ) {
+                        items(items, key = { it.id }) { item ->
+                            MenuItemCard(
+                                item = item,
+                                onDescription = { dialogItem = item },
+                            )
+                        }
+                    }
                 }
             }
         }
