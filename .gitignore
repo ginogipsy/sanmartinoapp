@@ -1,36 +1,68 @@
-# Gradle files
-.gradle/
-build/
-
-# Local configuration file (sdk path, etc)
-local.properties
-
-# Log/OS Files
-*.log
-
-# Android Studio generated files and folders
-captures/
-.externalNativeBuild/
-.cxx/
-*.aab
+# --- Build outputs ----------------------------------------------------------
 *.apk
+*.aab
+*.aar
+*.ap_
+*.dex
+bin/
+gen/
+out/
+release/
+build/
+**/build/
 output-metadata.json
 
-# IntelliJ
-*.iml
-.idea/
-misc.xml
-deploymentTargetDropDown.xml
-render.experimental.xml
+# --- Gradle -----------------------------------------------------------------
+.gradle/
+gradle-app.setting
+# NON ignorare il wrapper: serve a chiunque clona il repo per buildare
+!gradle/wrapper/gradle-wrapper.jar
+!gradle/wrapper/gradle-wrapper.properties
 
-# Keystore files
+# --- Local configuration ----------------------------------------------------
+# Path SDK Android e altre proprieta' specifiche della macchina
+local.properties
+
+# Eventuali credenziali / config locali non versionati
+*.local.properties
+
+# --- IDE: IntelliJ / Android Studio ----------------------------------------
+.idea/
+*.iml
+.gradletasknamecache
+captures/
+.navigation/
+.externalNativeBuild/
+.cxx/
+
+# Profiling
+*.hprof
+
+# --- Kotlin ----------------------------------------------------------------
+.kotlin/
+
+# --- Junie (JetBrains AI agent) --------------------------------------------
+.junie/
+
+# --- Claude Code (config locale per macchina) ------------------------------
+.claude/
+
+# --- Keystore --------------------------------------------------------------
 *.jks
 *.keystore
 
-# Google Services (e.g. APIs or Firebase)
+# --- Google Services / Firebase --------------------------------------------
 google-services.json
+firebase-config*.json
 
-# Android Profiling
-*.hprof
-/.junie/
-/.idea/
+# --- Logs ------------------------------------------------------------------
+*.log
+
+# --- OS files --------------------------------------------------------------
+.DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+desktop.ini
+ehthumbs.db
+$RECYCLE.BIN/
