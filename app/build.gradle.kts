@@ -1,4 +1,5 @@
 import org.openapitools.generator.gradle.plugin.tasks.GenerateTask
+import java.io.File
 
 plugins {
     id("com.android.application")
@@ -9,16 +10,13 @@ plugins {
 
 android {
     namespace = "com.ginogipsy.sanmartinoapp"
-    compileSdk {
-        version = release(36) {
-            minorApiLevel = 1
-        }
-    }
+    compileSdk = libs.versions.androidCompileSdk.get().toInt() // Aggiornato ad Android 17 (API 37)
 
     defaultConfig {
         applicationId = "com.ginogipsy.sanmartinoapp"
-        minSdk = 36
-        targetSdk = 36
+        minSdk = 36 // Puoi mantenere questo o abbassarlo se serve maggiore retrocompatibilità
+        //noinspection EditedTargetSdkVersion
+        targetSdk = 37 // Aggiornato ad Android 17 (API 37)
         versionCode = 1
         versionName = "1.0"
 
@@ -39,18 +37,34 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_26
-        targetCompatibility = JavaVersion.VERSION_26
+        // JDK 21 = LTS, supportato da AGP 9 + Compose + D8.
+        // Il Kotlin compiler 2.0.x accetta jvmTarget fino a 24; il backend usa JDK 26
+        // ma quella e' una scelta server-side che non si propaga all'app Android.
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
     }
     buildFeatures {
         compose = true
         buildConfig = true
     }
-    sourceSets {
-        getByName("main").java.srcDirs(
-            layout.buildDirectory.dir("generated/openapi/events/src/main/kotlin"),
-            layout.buildDirectory.dir("generated/openapi/stands/src/main/kotlin"),
-        )
+}
+
+// AGP 9 ha rimosso il supporto a `Provider<Directory>` nell'API SourceSet legacy
+// (`android.sourceSets.main.java.srcDir(...)`). La via attuale e' la Variant API.
+// `addStaticSourceDirectory` accetta un path String risolto eager: ok, perche'
+// le cartelle di output sono note al config time. La dipendenza task viene
+// mantenuta separatamente via `preBuild.dependsOn(...)` piu' sotto.
+androidComponents {
+    onVariants { variant ->
+        listOf("events", "stands").forEach { name ->
+            val generatedDir = layout.buildDirectory
+                .dir("generated/openapi/$name/src/main/kotlin")
+                .get()
+                .asFile
+                .absolutePath
+            (variant.sources.kotlin ?: variant.sources.java)
+                ?.addStaticSourceDirectory(generatedDir)
+        }
     }
 }
 
@@ -60,13 +74,13 @@ android {
 // Per aggiornarli al contratto piu' recente del backend: `./gradlew :app:syncOpenApiSpecs`,
 // poi commit del diff.
 
-val backendApiDir = providers.gradleProperty("backendApiDir")
+val backendApiDir: Provider<String> = providers.gradleProperty("backendApiDir")
     .orElse("src/main/openapi")
-    .map { java.io.File(projectDir, it).absolutePath }
+    .map { File(projectDir, it).absolutePath }
 
-val backendSpecsSource = providers.gradleProperty("backendSpecsSource")
+val backendSpecsSource: Provider<String> = providers.gradleProperty("backendSpecsSource")
     .orElse("../../san-martino-services/api")
-    .map { java.io.File(projectDir, it).absolutePath }
+    .map { File(projectDir, it).absolutePath }
 
 val syncOpenApiSpecs = tasks.register<Copy>("syncOpenApiSpecs") {
     description = "Copia gli OpenAPI specs dal repo backend nella cartella locale del client."
@@ -76,7 +90,7 @@ val syncOpenApiSpecs = tasks.register<Copy>("syncOpenApiSpecs") {
     }
     into(backendApiDir)
     doFirst {
-        val src = java.io.File(backendSpecsSource.get())
+        val src = File(backendSpecsSource.get())
         if (!src.exists()) {
             throw GradleException(
                 "Backend specs source non trovato: ${src.absolutePath}. " +
@@ -106,6 +120,7 @@ fun GenerateTask.commonKotlinClientConfig() {
 }
 
 val openApiGenerateEvents = tasks.register<GenerateTask>("openApiGenerateEvents") {
+    description = ""
     commonKotlinClientConfig()
     inputSpec.set(backendApiDir.map { "$it/events-api.yaml" })
     outputDir.set(
@@ -132,32 +147,32 @@ tasks.named("preBuild") {
 }
 
 dependencies {
-    implementation("androidx.core:core-ktx:1.18.0")
-    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.6.1")
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
-    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7")
-    implementation("androidx.activity:activity-compose:1.8.0")
-    implementation("androidx.navigation:navigation-compose:2.8.4")
-    implementation(platform("androidx.compose:compose-bom:2024.09.00"))
-    implementation("androidx.compose.ui:ui")
-    implementation("androidx.compose.ui:ui-graphics")
-    implementation("androidx.compose.ui:ui-tooling-preview")
-    implementation("androidx.compose.material3:material3")
-    implementation("androidx.compose.material:material-icons-extended")
+    implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation(libs.androidx.lifecycle.runtime.compose)
+    implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.navigation.compose)
 
-    // --- Networking ---
-    implementation("com.squareup.retrofit2:retrofit:2.11.0")
-    implementation("com.squareup.retrofit2:converter-kotlinx-serialization:2.11.0")
-    implementation("com.squareup.okhttp3:okhttp:4.12.0")
-    implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
+    implementation(platform(libs.androidx.compose.bom))
+    implementation(libs.androidx.compose.ui)
+    implementation(libs.androidx.compose.ui.graphics)
+    implementation(libs.androidx.compose.ui.tooling.preview)
+    implementation(libs.androidx.compose.material3)
+    implementation(libs.androidx.compose.material.icons.extended)
 
-    testImplementation("junit:junit:4.13.2")
-    androidTestImplementation("androidx.test.ext:junit:1.1.5")
-    androidTestImplementation("androidx.test.espresso:espresso-core:3.7.0")
-    androidTestImplementation(platform("androidx.compose:compose-bom:2024.09.00"))
-    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
-    debugImplementation("androidx.compose.ui:ui-tooling")
-    debugImplementation("androidx.compose.ui:ui-test-manifest")
+    implementation(libs.retrofit.core)
+    implementation(libs.retrofit.scalars)
+    implementation(libs.retrofit.serialization)
+    implementation(libs.okhttp.core)
+    implementation(libs.okhttp.logging)
+    implementation(libs.kotlinx.serialization.json)
+    implementation(libs.kotlinx.coroutines.android)
+
+    testImplementation(libs.junit)
+    androidTestImplementation(libs.androidx.test.junit)
+    androidTestImplementation(libs.androidx.espresso.core)
+    androidTestImplementation(libs.androidx.ui.test.junit4)
+    debugImplementation(libs.androidx.ui.tooling)
+    debugImplementation(libs.androidx.ui.test.manifest)
 }
