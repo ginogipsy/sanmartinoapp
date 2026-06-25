@@ -2,10 +2,10 @@ import org.openapitools.generator.gradle.plugin.tasks.GenerateTask
 import java.io.File
 
 plugins {
-    id("com.android.application")
-    id("org.jetbrains.kotlin.plugin.compose")
-    id("org.jetbrains.kotlin.plugin.serialization")
-    id("org.openapi.generator")
+    alias(libs.plugins.android.application)
+    alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.openapi.generator)
 }
 
 android {
@@ -30,7 +30,11 @@ android {
             buildConfigField("String", "API_BASE_URL", "\"http://10.0.2.2:8080/\"")
         }
         release {
-            isMinifyEnabled = false
+            // Abilita la rimozione di codice inutilizzato e l'offuscamento
+            isMinifyEnabled = true
+
+            // Abilita la rimozione di risorse inutilizzate (ottimizza le dimensioni)
+            isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             // Placeholder finche' non avremo un dominio reale.
             buildConfigField("String", "API_BASE_URL", "\"https://api.sanmartino.example.org/\"")
@@ -120,23 +124,28 @@ fun GenerateTask.commonKotlinClientConfig() {
 }
 
 val openApiGenerateEvents = tasks.register<GenerateTask>("openApiGenerateEvents") {
-    description = ""
+    group = "openapi tools"
+    description = "Genera il client Kotlin per le API degli eventi."
     commonKotlinClientConfig()
-    inputSpec.set(backendApiDir.map { "$it/events-api.yaml" })
-    outputDir.set(
-        layout.buildDirectory.dir("generated/openapi/events").map { it.asFile.absolutePath }
-    )
+
+    // CORREZIONE: Usiamo layout.projectDirectory.file()
+    inputSpec.set(backendApiDir.map { layout.projectDirectory.file("$it/events-api.yaml") })
+
+    outputDir.set(layout.buildDirectory.dir("generated/openapi/events"))
     apiPackage.set("com.ginogipsy.sanmartinoapp.network.generated.events.api")
     modelPackage.set("com.ginogipsy.sanmartinoapp.network.generated.events.model")
     packageName.set("com.ginogipsy.sanmartinoapp.network.generated.events")
 }
 
 val openApiGenerateStands = tasks.register<GenerateTask>("openApiGenerateStands") {
+    group = "openapi tools"
+    description = "Genera il client Kotlin per le API degli stands."
     commonKotlinClientConfig()
-    inputSpec.set(backendApiDir.map { "$it/stands-api.yaml" })
-    outputDir.set(
-        layout.buildDirectory.dir("generated/openapi/stands").map { it.asFile.absolutePath }
-    )
+
+    // CORREZIONE: Usiamo layout.projectDirectory.file()
+    inputSpec.set(backendApiDir.map { layout.projectDirectory.file("$it/stands-api.yaml") })
+
+    outputDir.set(layout.buildDirectory.dir("generated/openapi/stands"))
     apiPackage.set("com.ginogipsy.sanmartinoapp.network.generated.stands.api")
     modelPackage.set("com.ginogipsy.sanmartinoapp.network.generated.stands.model")
     packageName.set("com.ginogipsy.sanmartinoapp.network.generated.stands")
