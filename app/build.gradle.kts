@@ -107,12 +107,12 @@ val syncOpenApiSpecs = tasks.register<Copy>("syncOpenApiSpecs") {
 fun GenerateTask.commonKotlinClientConfig() {
     generatorName.set("kotlin")
     library.set("jvm-retrofit2")
+    modelNameSuffix.set("Dto")
     configOptions.set(
         mapOf(
             "serializationLibrary" to "kotlinx_serialization",
             "useCoroutines" to "true",
             "dateLibrary" to "java8",
-            "modelNameSuffix" to "Dto",
             "enumPropertyNaming" to "UPPERCASE",
             "generateApiTests" to "false",
             "generateModelTests" to "false",
