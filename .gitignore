@@ -15,6 +15,7 @@ output-metadata.json
 # --- Gradle -----------------------------------------------------------------
 .gradle/
 gradle-app.setting
+gradle/gradle-daemon-jvm.properties
 # NON ignorare il wrapper: serve a chiunque clona il repo per buildare
 !gradle/wrapper/gradle-wrapper.jar
 !gradle/wrapper/gradle-wrapper.properties
