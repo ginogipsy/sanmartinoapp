@@ -1,5 +1,6 @@
 import org.openapitools.generator.gradle.plugin.tasks.GenerateTask
 import java.io.File
+import java.util.Properties
 
 plugins {
     alias(libs.plugins.android.application)
@@ -17,17 +18,27 @@ android {
         minSdk = 36 // Puoi mantenere questo o abbassarlo se serve maggiore retrocompatibilità
         //noinspection EditedTargetSdkVersion
         targetSdk = 37 // Aggiornato ad Android 17 (API 37)
-        versionCode = 1
-        versionName = "1.0"
+
+        val versionProps = Properties()
+        val propsFile = project.rootProject.file("version.properties")
+        if (propsFile.exists()) {
+            propsFile.inputStream().use { versionProps.load(it) }
+        }
+
+        versionCode = versionProps.getProperty("versionCode")?.toInt() ?: 1
+        versionName = "${versionProps.getProperty("versionMajor") ?: 1}.${versionProps.getProperty("versionMinor") ?: 0}.${versionProps.getProperty("versionPatch") ?: 0}"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
         debug {
-            // 10.0.2.2 = host machine vista dall'emulatore Android.
-            // Il gateway gira su :8080 in dev.
-            buildConfigField("String", "API_BASE_URL", "\"http://10.0.2.2:8080/\"")
+            // NON usare 10.0.2.2: sulle immagini API 36+ le Local Network Protections
+            // scartano il traffico degli UID app verso la subnet locale dell'emulatore
+            // (10.0.2.0/24), quindi la connect va in timeout dopo 10s. Passiamo invece
+            // dal loopback del guest, che il task `adbReverse` tunnella sulla :8080
+            // dell'host (vedi piu' sotto).
+            buildConfigField("String", "API_BASE_URL", "\"http://127.0.0.1:8080/\"")
         }
         release {
             // Abilita la rimozione di codice inutilizzato e l'offuscamento
@@ -179,9 +190,11 @@ dependencies {
     implementation(libs.kotlinx.coroutines.android)
 
     testImplementation(libs.junit)
+    androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.test.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.androidx.ui.test.junit4)
+    debugImplementation(platform(libs.androidx.compose.bom))
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
 }
