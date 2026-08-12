@@ -1,5 +1,6 @@
 import org.openapitools.generator.gradle.plugin.tasks.GenerateTask
 import java.io.File
+import java.util.Properties
 
 plugins {
     alias(libs.plugins.android.application)
@@ -17,8 +18,15 @@ android {
         minSdk = 36 // Puoi mantenere questo o abbassarlo se serve maggiore retrocompatibilità
         //noinspection EditedTargetSdkVersion
         targetSdk = 37 // Aggiornato ad Android 17 (API 37)
-        versionCode = 1
-        versionName = "1.0"
+
+        val versionProps = Properties()
+        val propsFile = project.rootProject.file("version.properties")
+        if (propsFile.exists()) {
+            propsFile.inputStream().use { versionProps.load(it) }
+        }
+
+        versionCode = versionProps.getProperty("versionCode")?.toInt() ?: 1
+        versionName = "${versionProps.getProperty("versionMajor") ?: 1}.${versionProps.getProperty("versionMinor") ?: 0}.${versionProps.getProperty("versionPatch") ?: 0}"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
