@@ -25,12 +25,13 @@ Esegue i controlli di qualità su JDK 21:
 
 ### Release Pipeline (`release.yml`)
 Quando un branch di release o hotfix viene mergiato su `master`:
-1. **Tagging**: Crea un tag git `vX.Y.Z` basato sulla versione corrente.
+1. **Tagging**: Crea un tag git `vX.Y.Z` basato sulla versione determinata dallo **Smart Versioning**.
 2. **GitHub Release**: Crea una release su GitHub con changelog automatico.
-3. **Version Bump**:
-   - Legge `version.properties`.
-   - Incrementa `versionPatch` e `versionCode`.
-   - Esegue il commit e il push su `develop` (back-merge) per preparare il prossimo ciclo di sviluppo.
+3. **Smart Versioning Logic**:
+   - **Branch Name**: Se il branch si chiama `release/v1.2.0`, la versione rilasciata sarà `1.2.0`.
+   - **PR Labels**: Il bot cerca le etichette `major` o `minor` nella Pull Request mergiata per decidere quale componente incrementare.
+   - **Default**: Se non ci sono etichette o nomi branch specifici, incrementa la `patch`.
+4. **Version Bump**: Incrementa automaticamente `versionPatch` (rispetto alla versione rilasciata) e `versionCode`, eseguendo il push su `develop` (back-merge).
 
 ## Gestione della Versione
 
