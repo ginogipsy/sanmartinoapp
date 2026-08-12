@@ -1,4 +1,4 @@
-name: Release & Version Bump
+name: Release & Smart Versioning
 
 on:
   push:
@@ -11,6 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      pull-requests: read
 
     steps:
       - name: Checkout master
@@ -19,20 +20,69 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Read version properties
-        id: read_version
+      - name: Determine Version
+        id: versioning
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          # 1. Legge i valori attuali (base per il calcolo)
           MAJOR=$(grep 'versionMajor=' version.properties | cut -d'=' -f2)
           MINOR=$(grep 'versionMinor=' version.properties | cut -d'=' -f2)
           PATCH=$(grep 'versionPatch=' version.properties | cut -d'=' -f2)
           CODE=$(grep 'versionCode=' version.properties | cut -d'=' -f2)
-          VERSION_NAME="$MAJOR.$MINOR.$PATCH"
+          
+          # 2. Analizza la PR di merge per capire l'intento
+          PR_NUMBER=$(git log -1 --pretty=%B | grep -oP 'Merge pull request #\K\d+' || true)
+          
+          INC_TYPE="patch"
+          REQ_VERSION=""
+          
+          if [ ! -z "$PR_NUMBER" ]; then
+            echo "Analizzando PR #$PR_NUMBER..."
+            # Controlla etichette (major, minor)
+            LABELS=$(gh pr view "$PR_NUMBER" --json labels -q '.labels[].name')
+            if echo "$LABELS" | grep -iq "major"; then
+              INC_TYPE="major"
+            elif echo "$LABELS" | grep -iq "minor"; then
+              INC_TYPE="minor"
+            fi
+            
+            # Controlla se il branch ha un nome versione (es. release/v1.2.0)
+            BRANCH=$(gh pr view "$PR_NUMBER" --json headRefName -q '.headRefName')
+            if [[ "$BRANCH" =~ release/v([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
+              REQ_VERSION="${BASH_REMATCH[1]}"
+              echo "Versione rilevata dal branch: $REQ_VERSION"
+            fi
+          fi
+          
+          # 3. Calcola la versione da RILASCIARE (Tag)
+          if [ ! -z "$REQ_VERSION" ]; then
+            IFS='.' read -r REL_MAJOR REL_MINOR REL_PATCH <<< "$REQ_VERSION"
+          else
+            if [ "$INC_TYPE" == "major" ]; then
+              REL_MAJOR=$((MAJOR + 1))
+              REL_MINOR=0
+              REL_PATCH=0
+            elif [ "$INC_TYPE" == "minor" ]; then
+              REL_MAJOR=$MAJOR
+              REL_MINOR=$((MINOR + 1))
+              REL_PATCH=0
+            else
+              # Se è patch, usiamo la versione attuale del file (che è già quella corretta)
+              REL_MAJOR=$MAJOR
+              REL_MINOR=$MINOR
+              REL_PATCH=$PATCH
+            fi
+          fi
+          
+          VERSION_NAME="$REL_MAJOR.$REL_MINOR.$REL_PATCH"
           echo "VERSION_NAME=$VERSION_NAME" >> $GITHUB_ENV
-          echo "OLD_CODE=$CODE" >> $GITHUB_ENV
-          echo "major=$MAJOR" >> $GITHUB_OUTPUT
-          echo "minor=$MINOR" >> $GITHUB_OUTPUT
-          echo "patch=$PATCH" >> $GITHUB_OUTPUT
-          echo "code=$CODE" >> $GITHUB_OUTPUT
+          
+          # Output per il bump di develop (prossima versione)
+          echo "rel_major=$REL_MAJOR" >> $GITHUB_OUTPUT
+          echo "rel_minor=$REL_MINOR" >> $GITHUB_OUTPUT
+          echo "rel_patch=$REL_PATCH" >> $GITHUB_OUTPUT
+          echo "old_code=$CODE" >> $GITHUB_OUTPUT
 
       - name: Create Git Tag
         run: |
@@ -46,8 +96,6 @@ jobs:
         with:
           tag_name: v${{ env.VERSION_NAME }}
           name: Release v${{ env.VERSION_NAME }}
-          draft: false
-          prerelease: false
           generate_release_notes: true
 
       - name: Checkout develop for bump
@@ -55,23 +103,26 @@ jobs:
           git checkout develop
           git pull origin develop
 
-      - name: Bump Version
+      - name: Bump Version for next cycle
         run: |
-          MAJOR=${{ steps.read_version.outputs.major }}
-          MINOR=${{ steps.read_version.outputs.minor }}
-          PATCH=${{ steps.read_version.outputs.patch }}
-          CODE=${{ steps.read_version.outputs.code }}
+          MAJOR=${{ steps.versioning.outputs.rel_major }}
+          MINOR=${{ steps.versioning.outputs.rel_minor }}
+          PATCH=${{ steps.versioning.outputs.rel_patch }}
+          CODE=${{ steps.versioning.outputs.old_code }}
           
+          # Incrementiamo sempre la patch e il code per il prossimo giro di develop
           NEW_PATCH=$((PATCH + 1))
           NEW_CODE=$((CODE + 1))
           
+          sed -i "s/versionMajor=.*/versionMajor=$MAJOR/" version.properties
+          sed -i "s/versionMinor=.*/versionMinor=$MINOR/" version.properties
           sed -i "s/versionPatch=.*/versionPatch=$NEW_PATCH/" version.properties
           sed -i "s/versionCode=.*/versionCode=$NEW_CODE/" version.properties
           
-          echo "New Version: $MAJOR.$MINOR.$NEW_PATCH ($NEW_CODE)"
+          echo "Prossima versione su develop: $MAJOR.$MINOR.$NEW_PATCH ($NEW_CODE)"
 
       - name: Commit and Push Bump
         run: |
           git add version.properties
-          git commit -m "chore(release): bump version to ${{ steps.read_version.outputs.major }}.${{ steps.read_version.outputs.minor }}.$(( ${{ steps.read_version.outputs.patch }} + 1 )) [skip ci]"
+          git commit -m "chore(release): bump version to ${{ steps.versioning.outputs.rel_major }}.${{ steps.versioning.outputs.rel_minor }}.$(( ${{ steps.versioning.outputs.rel_patch }} + 1 )) [skip ci]"
           git push origin develop
