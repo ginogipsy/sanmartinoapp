@@ -1,0 +1,77 @@
+name: Release & Version Bump
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  release:
+    name: Create Release & Bump Version
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout master
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Read version properties
+        id: read_version
+        run: |
+          MAJOR=$(grep 'versionMajor=' version.properties | cut -d'=' -f2)
+          MINOR=$(grep 'versionMinor=' version.properties | cut -d'=' -f2)
+          PATCH=$(grep 'versionPatch=' version.properties | cut -d'=' -f2)
+          CODE=$(grep 'versionCode=' version.properties | cut -d'=' -f2)
+          VERSION_NAME="$MAJOR.$MINOR.$PATCH"
+          echo "VERSION_NAME=$VERSION_NAME" >> $GITHUB_ENV
+          echo "OLD_CODE=$CODE" >> $GITHUB_ENV
+          echo "major=$MAJOR" >> $GITHUB_OUTPUT
+          echo "minor=$MINOR" >> $GITHUB_OUTPUT
+          echo "patch=$PATCH" >> $GITHUB_OUTPUT
+          echo "code=$CODE" >> $GITHUB_OUTPUT
+
+      - name: Create Git Tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "v${{ env.VERSION_NAME }}" -m "Release v${{ env.VERSION_NAME }}"
+          git push origin "v${{ env.VERSION_NAME }}"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ env.VERSION_NAME }}
+          name: Release v${{ env.VERSION_NAME }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+
+      - name: Checkout develop for bump
+        run: |
+          git checkout develop
+          git pull origin develop
+
+      - name: Bump Version
+        run: |
+          MAJOR=${{ steps.read_version.outputs.major }}
+          MINOR=${{ steps.read_version.outputs.minor }}
+          PATCH=${{ steps.read_version.outputs.patch }}
+          CODE=${{ steps.read_version.outputs.code }}
+          
+          NEW_PATCH=$((PATCH + 1))
+          NEW_CODE=$((CODE + 1))
+          
+          sed -i "s/versionPatch=.*/versionPatch=$NEW_PATCH/" version.properties
+          sed -i "s/versionCode=.*/versionCode=$NEW_CODE/" version.properties
+          
+          echo "New Version: $MAJOR.$MINOR.$NEW_PATCH ($NEW_CODE)"
+
+      - name: Commit and Push Bump
+        run: |
+          git add version.properties
+          git commit -m "chore(release): bump version to ${{ steps.read_version.outputs.major }}.${{ steps.read_version.outputs.minor }}.$(( ${{ steps.read_version.outputs.patch }} + 1 )) [skip ci]"
+          git push origin develop
