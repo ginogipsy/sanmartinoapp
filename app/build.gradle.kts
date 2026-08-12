@@ -25,9 +25,12 @@ android {
 
     buildTypes {
         debug {
-            // 10.0.2.2 = host machine vista dall'emulatore Android.
-            // Il gateway gira su :8080 in dev.
-            buildConfigField("String", "API_BASE_URL", "\"http://10.0.2.2:8080/\"")
+            // NON usare 10.0.2.2: sulle immagini API 36+ le Local Network Protections
+            // scartano il traffico degli UID app verso la subnet locale dell'emulatore
+            // (10.0.2.0/24), quindi la connect va in timeout dopo 10s. Passiamo invece
+            // dal loopback del guest, che il task `adbReverse` tunnella sulla :8080
+            // dell'host (vedi piu' sotto).
+            buildConfigField("String", "API_BASE_URL", "\"http://127.0.0.1:8080/\"")
         }
         release {
             // Abilita la rimozione di codice inutilizzato e l'offuscamento
@@ -179,9 +182,11 @@ dependencies {
     implementation(libs.kotlinx.coroutines.android)
 
     testImplementation(libs.junit)
+    androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.test.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.androidx.ui.test.junit4)
+    debugImplementation(platform(libs.androidx.compose.bom))
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
 }

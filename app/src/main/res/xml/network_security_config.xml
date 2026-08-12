@@ -1,12 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <network-security-config>
     <!--
-      Cleartext consentito SOLO per il loopback dell'emulatore Android (10.0.2.2),
-      cosi' in dev possiamo parlare col gateway Spring Cloud su http://localhost:8080
-      dell'host. In release punteremo a https://api.sanmartino.example.org/ (TLS),
-      quindi nessun cleartext globale.
+      Cleartext consentito SOLO per il loopback del device, dove `adb reverse`
+      espone la :8080 dell'host: cosi' in dev possiamo parlare col gateway Spring
+      Cloud. 10.0.2.2 resta per compatibilita' con device/immagini dove le Local
+      Network Protections non bloccano la subnet dell'emulatore. In release
+      punteremo a https://api.sanmartino.example.org/ (TLS), quindi nessun
+      cleartext globale.
     -->
     <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">127.0.0.1</domain>
+        <domain includeSubdomains="false">localhost</domain>
         <domain includeSubdomains="false">10.0.2.2</domain>
     </domain-config>
 </network-security-config>

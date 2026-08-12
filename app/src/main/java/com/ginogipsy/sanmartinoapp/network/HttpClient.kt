@@ -4,7 +4,13 @@ import com.ginogipsy.sanmartinoapp.BuildConfig
 import com.ginogipsy.sanmartinoapp.network.auth.AnonymousTokenProvider
 import com.ginogipsy.sanmartinoapp.network.auth.AuthInterceptor
 import com.ginogipsy.sanmartinoapp.network.auth.TokenProvider
+import com.ginogipsy.sanmartinoapp.network.serialization.LocalDateSerializer
+import com.ginogipsy.sanmartinoapp.network.serialization.LocalDateTimeSerializer
+import com.ginogipsy.sanmartinoapp.network.serialization.OffsetDateTimeSerializer
+import com.ginogipsy.sanmartinoapp.network.serialization.UUIDSerializer
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.modules.SerializersModule
+import kotlinx.serialization.modules.contextual
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -24,6 +30,12 @@ object HttpClient {
     private val json: Json = Json {
         ignoreUnknownKeys = true
         explicitNulls = false
+        serializersModule = SerializersModule {
+            contextual(UUIDSerializer)
+            contextual(LocalDateSerializer)
+            contextual(LocalDateTimeSerializer)
+            contextual(OffsetDateTimeSerializer)
+        }
     }
 
     fun create(
