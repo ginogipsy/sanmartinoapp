@@ -28,7 +28,7 @@ Quando un branch di release o hotfix viene mergiato su `master`:
 1. **Tagging**: Crea un tag git `vX.Y.Z` basato sulla versione determinata dallo **Smart Versioning**.
 2. **GitHub Release**: Crea una release su GitHub con changelog automatico.
 3. **Smart Versioning Logic**:
-   - **Branch Name**: Se il branch si chiama `release/v1.2.0`, la versione rilasciata sarà `1.2.0`.
+   - **Branch Name**: Il bot estrae la versione (formato `X.Y.Z`) dalla fine del nome del branch sorgente. Supporta branch come `release/1.2.0`, `release/v1.2.0`, `release/release1.2.0` o `hotfix/1.2.1`.
    - **PR Labels**: Il bot cerca le etichette `major` o `minor` nella Pull Request mergiata per decidere quale componente incrementare.
    - **Default**: Se non ci sono etichette o nomi branch specifici, incrementa la `patch`.
 4. **Version Bump**: Incrementa automaticamente `versionPatch` (rispetto alla versione rilasciata) e `versionCode`, eseguendo il push su `develop` (back-merge).

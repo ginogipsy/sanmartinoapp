@@ -1,8 +1,11 @@
 package com.ginogipsy.sanmartinoapp.di
 
+import android.content.Context
+import androidx.room.Room
+import com.ginogipsy.sanmartinoapp.data.local.AppDatabase
 import com.ginogipsy.sanmartinoapp.data.repository.EventRepository
+import com.ginogipsy.sanmartinoapp.data.repository.OfflineFirstStandRepository
 import com.ginogipsy.sanmartinoapp.data.repository.RemoteEventRepository
-import com.ginogipsy.sanmartinoapp.data.repository.RemoteStandRepository
 import com.ginogipsy.sanmartinoapp.data.repository.StandRepository
 import com.ginogipsy.sanmartinoapp.network.HttpClient
 import com.ginogipsy.sanmartinoapp.network.generated.events.api.EventsApi
@@ -19,7 +22,7 @@ interface AppContainer {
     val standRepository: StandRepository
 }
 
-class DefaultAppContainer : AppContainer {
+class DefaultAppContainer(private val context: Context) : AppContainer {
 
     private val retrofit: Retrofit by lazy { HttpClient.create() }
 
@@ -31,11 +34,17 @@ class DefaultAppContainer : AppContainer {
         retrofit.create(StandsApi::class.java)
     }
 
+    private val database: AppDatabase by lazy {
+        Room.databaseBuilder(context, AppDatabase::class.java, "san_martino_db")
+            .fallbackToDestructiveMigration()
+            .build()
+    }
+
     override val eventRepository: EventRepository by lazy {
         RemoteEventRepository(eventsApi)
     }
 
     override val standRepository: StandRepository by lazy {
-        RemoteStandRepository(standsApi)
+        OfflineFirstStandRepository(standsApi, database.cantinaDao())
     }
 }

@@ -52,6 +52,7 @@ internal fun MenuItemDto.toDomain(): MenuItem = MenuItem(
     description = description.toDomain(),
     availablePlates = availablePlates,
     kind = kind.toDomain(),
+    keywords = keywords ?: emptyList(),
 )
 
 internal fun MenuKindDto.toDomain(): MenuKind = when (this) {
