@@ -33,6 +33,14 @@ Se preferisci specificare la versione nel branch:
 2. Apri la PR verso `master` e fai il merge.
 3. **Risultato**: Il bot forzerà esattamente la versione `1.2.0`.
 
+### 4. Metodo Manuale (GitHub UI)
+Per il massimo controllo:
+1. Vai nella tab **Actions** su GitHub.
+2. Seleziona il workflow **"Release & Smart Versioning"**.
+3. Clicca su **"Run workflow"**.
+4. Inserisci la versione desiderata nel campo `manual_version` (es: `1.5.0`).
+5. **Risultato**: Il bot ignorerà ogni altra logica e userà esattamente quella versione.
+
 ---
 
 ## 🤖 Cosa succede dietro le quinte?

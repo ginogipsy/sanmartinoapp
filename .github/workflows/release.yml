@@ -4,6 +4,12 @@ on:
   push:
     branches:
       - master
+  workflow_dispatch:
+    inputs:
+      manual_version:
+        description: 'Forza una versione specifica (es: 1.5.0). Lascia vuoto per logica automatica.'
+        required: false
+        default: ''
 
 jobs:
   release:
@@ -36,10 +42,14 @@ jobs:
           PR_NUMBER=$(echo "$COMMIT_MSG" | grep -oP 'Merge pull request #\K\d+' || true)
           
           INC_TYPE="patch"
-          REQ_VERSION=""
+          REQ_VERSION="${{ github.event.inputs.manual_version }}"
           BRANCH_NAME=""
 
-          # Prova a estrarre il branch name direttamente dal messaggio di commit (più veloce e affidabile)
+          if [ ! -z "$REQ_VERSION" ]; then
+            echo "Versione forzata manualmente da UI: $REQ_VERSION"
+          fi
+
+          # Prova a estrarre il branch name direttamente dal messaggio di commit
           # Formato tipico: "Merge pull request #6 from ginogipsy/release/v1.5.0"
           BRANCH_NAME=$(echo "$COMMIT_MSG" | grep -oP 'from \S+/\K\S+' || true)
           echo "Branch rilevato dal messaggio di commit: $BRANCH_NAME"
