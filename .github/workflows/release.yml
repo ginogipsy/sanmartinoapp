@@ -32,26 +32,40 @@ jobs:
           CODE=$(grep 'versionCode=' version.properties | cut -d'=' -f2)
           
           # 2. Analizza la PR di merge per capire l'intento
-          PR_NUMBER=$(git log -1 --pretty=%B | grep -oP 'Merge pull request #\K\d+' || true)
+          COMMIT_MSG=$(git log -1 --pretty=%B)
+          PR_NUMBER=$(echo "$COMMIT_MSG" | grep -oP 'Merge pull request #\K\d+' || true)
           
           INC_TYPE="patch"
           REQ_VERSION=""
-          
-          if [ ! -z "$PR_NUMBER" ]; then
-            echo "Analizzando PR #$PR_NUMBER..."
-            # Controlla etichette (major, minor)
-            LABELS=$(gh pr view "$PR_NUMBER" --json labels -q '.labels[].name')
-            if echo "$LABELS" | grep -iq "major"; then
-              INC_TYPE="major"
-            elif echo "$LABELS" | grep -iq "minor"; then
-              INC_TYPE="minor"
+          BRANCH_NAME=""
+
+          # Prova a estrarre il branch name direttamente dal messaggio di commit (più veloce e affidabile)
+          # Formato tipico: "Merge pull request #6 from ginogipsy/release/v1.5.0"
+          BRANCH_NAME=$(echo "$COMMIT_MSG" | grep -oP 'from \S+/\K\S+' || true)
+          echo "Branch rilevato dal messaggio di commit: $BRANCH_NAME"
+
+          if [ ! -z "$PR_NUMBER" ] && [ -z "$BRANCH_NAME" ]; then
+            echo "Analizzando PR #$PR_NUMBER tramite GitHub CLI..."
+            # Fallback alle API GitHub se non trovato nel messaggio
+            BRANCH_NAME=$(gh pr view "$PR_NUMBER" --json headRefName -q '.headRefName' || true)
+          fi
+
+          if [ ! -z "$BRANCH_NAME" ] || [ ! -z "$PR_NUMBER" ]; then
+            # Se abbiamo il nome branch, cerchiamo la versione X.Y.Z
+            if [[ "$BRANCH_NAME" =~ ([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
+              REQ_VERSION="${BASH_REMATCH[1]}"
+              echo "Versione target rilevata ($BRANCH_NAME): $REQ_VERSION"
             fi
             
-            # Regex flessibile: cerca una sequenza X.Y.Z alla fine del nome del branch
-            # Supporta: release/1.1.0, release/v1.1.0, release/release1.1.0, hotfix/1.1.1
-            if [[ "$BRANCH" =~ ([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
-              REQ_VERSION="${BASH_REMATCH[1]}"
-              echo "Versione rilevata dal branch ($BRANCH): $REQ_VERSION"
+            # Se siamo via gh cli o abbiamo il numero PR, controlla anche le etichette
+            if [ ! -z "$PR_NUMBER" ]; then
+              echo "Controllo etichette PR #$PR_NUMBER..."
+              LABELS=$(gh pr view "$PR_NUMBER" --json labels -q '.labels[].name' 2>/dev/null || true)
+              if echo "$LABELS" | grep -iq "major"; then
+                INC_TYPE="major"
+              elif echo "$LABELS" | grep -iq "minor"; then
+                INC_TYPE="minor"
+              fi
             fi
           fi
           
