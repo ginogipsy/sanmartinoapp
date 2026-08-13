@@ -9,12 +9,12 @@ import com.ginogipsy.sanmartinoapp.data.model.Cantina
 import com.ginogipsy.sanmartinoapp.data.model.MenuItem
 import com.ginogipsy.sanmartinoapp.data.model.MenuKind
 import com.ginogipsy.sanmartinoapp.data.repository.StandRepository
-import com.ginogipsy.sanmartinoapp.network.NetworkResult
 import com.ginogipsy.sanmartinoapp.ui.sanMartinoApplication
 import com.ginogipsy.sanmartinoapp.ui.state.UiState
-import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 data class MenuData(
@@ -28,8 +28,22 @@ class MenuViewModel(
     private val standRepository: StandRepository,
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow<UiState<MenuData>>(UiState.Loading)
-    val uiState: StateFlow<UiState<MenuData>> = _uiState.asStateFlow()
+    val uiState: StateFlow<UiState<MenuData>> =
+        standRepository.getStandStream(cantinaId)
+            .map { cantina ->
+                if (cantina == null) UiState.Loading
+                else {
+                    val items = when (kind) {
+                        MenuKind.FOOD -> cantina.foods
+                        MenuKind.DRINK -> cantina.drinks
+                    }
+                    UiState.Success(MenuData(cantina = cantina, items = items))
+                }
+            }.stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5_000),
+                initialValue = UiState.Loading,
+            )
 
     init {
         refresh()
@@ -37,17 +51,7 @@ class MenuViewModel(
 
     fun refresh() {
         viewModelScope.launch {
-            _uiState.value = UiState.Loading
-            _uiState.value = when (val r = standRepository.getStand(cantinaId)) {
-                is NetworkResult.Success -> {
-                    val items = when (kind) {
-                        MenuKind.FOOD -> r.data.foods
-                        MenuKind.DRINK -> r.data.drinks
-                    }
-                    UiState.Success(MenuData(cantina = r.data, items = items))
-                }
-                is NetworkResult.Error -> UiState.Error(r.message)
-            }
+            standRepository.getStand(cantinaId)
         }
     }
 
