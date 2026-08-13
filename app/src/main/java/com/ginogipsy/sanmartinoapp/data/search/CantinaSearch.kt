@@ -47,4 +47,5 @@ private fun Cantina.matchesAny(normalizedQuery: String): Boolean =
 private fun MenuItem.matches(normalizedQuery: String): Boolean =
     name.lowercase().contains(normalizedQuery) ||
         description.it.lowercase().contains(normalizedQuery) ||
-        description.en.lowercase().contains(normalizedQuery)
+        description.en.lowercase().contains(normalizedQuery) ||
+        keywords.any { it.lowercase().contains(normalizedQuery) }

@@ -47,11 +47,11 @@ jobs:
               INC_TYPE="minor"
             fi
             
-            # Controlla se il branch ha un nome versione (es. release/v1.2.0)
-            BRANCH=$(gh pr view "$PR_NUMBER" --json headRefName -q '.headRefName')
-            if [[ "$BRANCH" =~ release/v([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
+            # Regex flessibile: cerca una sequenza X.Y.Z alla fine del nome del branch
+            # Supporta: release/1.1.0, release/v1.1.0, release/release1.1.0, hotfix/1.1.1
+            if [[ "$BRANCH" =~ ([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
               REQ_VERSION="${BASH_REMATCH[1]}"
-              echo "Versione rilevata dal branch: $REQ_VERSION"
+              echo "Versione rilevata dal branch ($BRANCH): $REQ_VERSION"
             fi
           fi
           

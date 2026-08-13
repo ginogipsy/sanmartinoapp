@@ -8,4 +8,5 @@ data class MenuItem(
     val description: LocalizedText,
     val availablePlates: Int,
     val kind: MenuKind,
+    val keywords: List<String> = emptyList(),
 )
