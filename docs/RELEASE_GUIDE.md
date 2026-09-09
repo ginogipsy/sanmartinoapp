@@ -61,7 +61,11 @@ Sui branch di sviluppo (**`develop`**, **`feature/*`**), la pipeline si ferma do
 
 ---
 
-## 🤖 Cosa succede dietro le quinte?
+## 🧪 Qualità del Codice (Qodana)
+
+Ogni commit ed ogni Pull Request viene analizzata automaticamente da **JetBrains Qodana**.
+- Il report è consultabile nella tab **Checks** della Pull Request.
+- Assicuratevi che non vengano introdotti nuovi "Critical" o "High" issues prima del merge.
 
 Ad ogni merge su `master`, il workflow di GitHub:
 1. Determina la versione corretta tramite **Smart Versioning**.

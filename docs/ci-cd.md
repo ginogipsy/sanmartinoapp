@@ -18,6 +18,7 @@ La pipeline dell'app Android segue il modello `git flow` utilizzato per il backe
 | `ci-cd.yml` | Build, Lint, Unit Tests | PR → `develop`, `master`; Push su branch/tag |
 | `release.yml` | Tag, GitHub Release, Version Bump | Push su `master` |
 | `deploy.yml` | Pubblicazione APK (Automatico/Manuale) | Chiamato da `ci-cd.yml` |
+| `qodana_code_quality.yml` | Analisi statica della qualità del codice | Push su branch/tag, PR |
 
 ## Allineamento a git flow
 
