@@ -9,8 +9,8 @@ San Martino is a distributed ecosystem for local event management (Arce, FR).
 ## Versioning & CI/CD
 - **Branching Model**: `git flow`. `develop` per lo sviluppo, `master` per la produzione.
 - **Versioning Management**: Centralizzata in `version.properties`. Non modificare `versionCode`/`versionName` in `build.gradle.kts`.
-- **CI Pipeline**: `ci.yml` esegue lint e test su PR verso `develop`/`master`.
-- **Release Automation (Smart Versioning)**: Al merge su `master`, il workflow `release.yml` determina la versione dal nome del branch (es. `release/v1.1.0`) o dalle etichette PR (`major`, `minor`). Incrementa automaticamente la versione su `develop` dopo il tag.
+- **CI/CD Pipeline**: `ci-cd.yml` esegue lint e test su branch/PR. Supporta il deploy manuale dell'APK via "Approve" (environment `san-martino-registry`).
+- **Release Automation (Smart Versioning)**: Al merge su `master`, il workflow `release.yml` determina la versione dal nome del branch (es. `release/v1.1.0`) o dalle etichette PR (`major`, `minor`).
 
 ## Backend Architecture & Services
 - **Spring Cloud Gateway**: Routing + Resilience4j (circuit breaker).
