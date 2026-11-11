@@ -35,3 +35,15 @@ La versione è gestita centralmente in:
 **`version.properties`**
 
 Il file `app/build.gradle.kts` legge questi valori dinamicamente.
+
+## Sviluppo con Backend in Kubernetes (Kind)
+
+Nelle immagini con API 36+, le **Local Network Protections** di Android impediscono il traffico delle app verso la subnet dell'emulatore (`10.0.2.2`).
+
+Il build type `debug` è pertanto configurato su `http://127.0.0.1:8080/`. Quando il backend gira sul cluster Kind locale:
+1. Avviare l'emulatore Android.
+2. Eseguire il task Gradle dedicato per inoltrare la porta al controller Ingress:
+   ```bash
+   ./gradlew adbReverse
+   ```
+3. L'applicazione comunicherà con l'Ingress Traefik del cluster locale tramite loopback `127.0.0.1:8080`.
