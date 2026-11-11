@@ -202,3 +202,11 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
 }
+// Inoltra la porta 8080 dell'emulatore Android (guest) alla porta 8080 dell'host locale,
+// dove è in ascolto l'Ingress Traefik del cluster Kind locale.
+tasks.register<Exec>("adbReverse") {
+    group = "development"
+    description = "Configura 'adb reverse tcp:8080 tcp:8080' per bypassare le limitazioni di 10.0.2.2 su API 36+."
+    commandLine("adb", "reverse", "tcp:8080", "tcp:8080")
+    isIgnoreExitValue = true
+}
