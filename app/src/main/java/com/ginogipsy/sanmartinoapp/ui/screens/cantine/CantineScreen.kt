@@ -51,6 +51,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ginogipsy.sanmartinoapp.R
 import com.ginogipsy.sanmartinoapp.data.model.Cantina
+import com.ginogipsy.sanmartinoapp.data.model.Language
 import com.ginogipsy.sanmartinoapp.data.model.MenuKind
 import com.ginogipsy.sanmartinoapp.data.search.CantinaSearchResult
 import com.ginogipsy.sanmartinoapp.i18n.LocalLanguage
@@ -122,12 +123,20 @@ fun CantineScreen(
                             modifier = Modifier.fillMaxSize(),
                             contentAlignment = Alignment.Center,
                         ) {
-                            Text(
-                                text = stringResource(R.string.search_no_results),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            Surface(
+                                shape = MaterialTheme.shapes.medium,
+                                color = MaterialTheme.colorScheme.surfaceVariant,
+                                contentColor = androidx.compose.ui.graphics.Color.Black,
+                                shadowElevation = 2.dp,
                                 modifier = Modifier.padding(24.dp),
-                            )
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.search_no_results),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = androidx.compose.ui.graphics.Color.Black,
+                                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 14.dp),
+                                )
+                            }
                         }
                     } else {
                         LazyColumn(
@@ -266,8 +275,12 @@ private fun CantinaCard(
 
             val foodsToDisplay = if (cantina.foods.isNotEmpty()) cantina.foods else result.matchingFoods
             if (foodsToDisplay.isNotEmpty()) {
+                val foodNames = foodsToDisplay.joinToString(", ") { item ->
+                    val desc = item.description.pick(lang)
+                    if (lang == Language.EN && desc.isNotBlank()) desc else item.name
+                }
                 Text(
-                    text = stringResource(R.string.action_food) + ": " + foodsToDisplay.joinToString(", ") { it.name },
+                    text = stringResource(R.string.action_food) + ": " + foodNames,
                     style = MaterialTheme.typography.bodySmall,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.primary,

@@ -135,12 +135,21 @@ private fun EventsList(
 
 @Composable
 private fun SectionHeader(text: String) {
-    Text(
-        text = text,
-        style = MaterialTheme.typography.titleMedium,
-        fontWeight = FontWeight.SemiBold,
+    androidx.compose.material3.Surface(
+        shape = MaterialTheme.shapes.small,
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        contentColor = androidx.compose.ui.graphics.Color.Black,
+        shadowElevation = 1.dp,
         modifier = Modifier.padding(top = 8.dp, bottom = 4.dp),
-    )
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = androidx.compose.ui.graphics.Color.Black,
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+        )
+    }
 }
 
 @Composable
