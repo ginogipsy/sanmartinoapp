@@ -7,4 +7,6 @@
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    <color name="san_martino_wine">#541F2C</color>
+    <color name="san_martino_cream">#FAF6ED</color>
 </resources>

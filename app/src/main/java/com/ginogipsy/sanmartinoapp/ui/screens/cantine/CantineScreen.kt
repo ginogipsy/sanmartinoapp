@@ -29,6 +29,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -50,8 +51,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ginogipsy.sanmartinoapp.R
 import com.ginogipsy.sanmartinoapp.data.model.Cantina
+import com.ginogipsy.sanmartinoapp.data.model.Language
 import com.ginogipsy.sanmartinoapp.data.model.MenuKind
 import com.ginogipsy.sanmartinoapp.data.search.CantinaSearchResult
+import com.ginogipsy.sanmartinoapp.i18n.LocalLanguage
 import com.ginogipsy.sanmartinoapp.ui.AppViewModelProvider
 import com.ginogipsy.sanmartinoapp.ui.components.BilingualDescriptionDialog
 import com.ginogipsy.sanmartinoapp.ui.components.CantinaNumberBadge
@@ -73,9 +76,13 @@ fun CantineScreen(
     var dialogCantina by remember { mutableStateOf<Cantina?>(null) }
 
     Scaffold(
+        containerColor = androidx.compose.ui.graphics.Color.Transparent,
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.cantine_title)) },
+                colors = androidx.compose.material3.TopAppBarDefaults.topAppBarColors(
+                    containerColor = androidx.compose.ui.graphics.Color.Transparent,
+                ),
+                title = { com.ginogipsy.sanmartinoapp.ui.components.BrandTitle(stringResource(R.string.cantine_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
@@ -116,12 +123,20 @@ fun CantineScreen(
                             modifier = Modifier.fillMaxSize(),
                             contentAlignment = Alignment.Center,
                         ) {
-                            Text(
-                                text = stringResource(R.string.search_no_results),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            Surface(
+                                shape = MaterialTheme.shapes.medium,
+                                color = MaterialTheme.colorScheme.surfaceVariant,
+                                contentColor = androidx.compose.ui.graphics.Color.Black,
+                                shadowElevation = 2.dp,
                                 modifier = Modifier.padding(24.dp),
-                            )
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.search_no_results),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = androidx.compose.ui.graphics.Color.Black,
+                                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 14.dp),
+                                )
+                            }
                         }
                     } else {
                         LazyColumn(
@@ -195,6 +210,18 @@ private fun SearchField(
         },
         singleLine = true,
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedContainerColor = androidx.compose.ui.graphics.Color.White,
+            unfocusedContainerColor = androidx.compose.ui.graphics.Color.White,
+            focusedTextColor = MaterialTheme.colorScheme.onSurface,
+            unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+            focusedPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            unfocusedPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            focusedLeadingIconColor = MaterialTheme.colorScheme.onSurface,
+            unfocusedLeadingIconColor = MaterialTheme.colorScheme.onSurface,
+            focusedTrailingIconColor = MaterialTheme.colorScheme.onSurface,
+            unfocusedTrailingIconColor = MaterialTheme.colorScheme.onSurface,
+        ),
     )
 }
 
@@ -208,8 +235,12 @@ private fun CantinaCard(
     onLocation: () -> Unit,
 ) {
     val cantina = result.cantina
+    val lang by LocalLanguage.current
+    val descriptionText = cantina.description.pick(lang)
+
     Card(
         modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -232,6 +263,31 @@ private fun CantinaCard(
                     }
                 }
             }
+
+            if (descriptionText.isNotBlank()) {
+                Text(
+                    text = descriptionText,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 8.dp),
+                )
+            }
+
+            val foodsToDisplay = if (cantina.foods.isNotEmpty()) cantina.foods else result.matchingFoods
+            if (foodsToDisplay.isNotEmpty()) {
+                val foodNames = foodsToDisplay.joinToString(", ") { item ->
+                    val desc = item.description.pick(lang)
+                    if (lang == Language.EN && desc.isNotBlank()) desc else item.name
+                }
+                Text(
+                    text = stringResource(R.string.action_food) + ": " + foodNames,
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(top = 6.dp),
+                )
+            }
+
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
