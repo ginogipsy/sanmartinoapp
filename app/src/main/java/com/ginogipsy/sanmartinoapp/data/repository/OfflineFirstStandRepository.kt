@@ -9,6 +9,9 @@ import com.ginogipsy.sanmartinoapp.network.generated.stands.api.StandsApi
 import com.ginogipsy.sanmartinoapp.network.map
 import com.ginogipsy.sanmartinoapp.network.mapper.toDomain
 import com.ginogipsy.sanmartinoapp.network.safeApiCall
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
@@ -30,6 +33,16 @@ class OfflineFirstStandRepository(
         if (result is NetworkResult.Success) {
             val entities = result.data.map { it.toDomain().toEntity() }
             dao.insertCantine(entities)
+
+            coroutineScope {
+                result.data.map { summary ->
+                    async { safeApiCall { api.getStand(summary.id) } }
+                }.awaitAll().forEach { detailResult ->
+                    if (detailResult is NetworkResult.Success) {
+                        saveFullCantina(detailResult.data.toDomain())
+                    }
+                }
+            }
         }
         return result.map { }
     }

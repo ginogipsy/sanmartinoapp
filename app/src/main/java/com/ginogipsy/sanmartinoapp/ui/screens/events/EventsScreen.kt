@@ -52,9 +52,13 @@ fun EventsScreen(
     var dialogEvent by remember { mutableStateOf<Event?>(null) }
 
     Scaffold(
+        containerColor = androidx.compose.ui.graphics.Color.Transparent,
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.events_title)) },
+                colors = androidx.compose.material3.TopAppBarDefaults.topAppBarColors(
+                    containerColor = androidx.compose.ui.graphics.Color.Transparent,
+                ),
+                title = { com.ginogipsy.sanmartinoapp.ui.components.BrandTitle(stringResource(R.string.events_title)) },
                 actions = { LanguageToggle() },
             )
         },
@@ -131,12 +135,21 @@ private fun EventsList(
 
 @Composable
 private fun SectionHeader(text: String) {
-    Text(
-        text = text,
-        style = MaterialTheme.typography.titleMedium,
-        fontWeight = FontWeight.SemiBold,
+    androidx.compose.material3.Surface(
+        shape = MaterialTheme.shapes.small,
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        contentColor = androidx.compose.ui.graphics.Color.Black,
+        shadowElevation = 1.dp,
         modifier = Modifier.padding(top = 8.dp, bottom = 4.dp),
-    )
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = androidx.compose.ui.graphics.Color.Black,
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+        )
+    }
 }
 
 @Composable
@@ -148,6 +161,7 @@ private fun EventCard(
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
     ) {
         Column(

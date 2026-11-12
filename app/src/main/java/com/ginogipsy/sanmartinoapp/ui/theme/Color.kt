@@ -2,17 +2,20 @@ package com.ginogipsy.sanmartinoapp.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// Brand palette — viviAMOarce / Cantine di San Martino
-val AutumnOrange = Color(0xFFE07A1F)        // primary — cerchi numero cantina
-val AutumnYellow = Color(0xFFF2B233)        // accent — foglie d'autunno
-val WineRed = Color(0xFF7A1F1F)             // tertiary — vino, dettagli
-val WoodBrown = Color(0xFF6B4423)           // secondary — tavole legno
-val WoodBrownDark = Color(0xFF3E2814)
-val ParchmentCream = Color(0xFFFFF6E0)      // background light
-val ParchmentSurface = Color(0xFFFFEFC9)    // surface light
+// Palette ufficiale estratta dal sito web
+val SanMartinoWine = Color(0xFF541F2C)
+val SanMartinoDeep = Color(0xFF32171F)
+val SanMartinoGold = Color(0xFFEFBF63)
+val SanMartinoCream = Color(0xFFFAF6ED)
+val SanMartinoInk = Color(0xFF302D28)
+val SanMartinoMuted = Color(0xFF716B60)
+val SanMartinoLine = Color(0xFFDFD6C7)
 
-// Dark variants
-val AutumnOrangeDark = Color(0xFFFFB174)
-val AutumnYellowDark = Color(0xFFFFD27A)
-val WineRedDark = Color(0xFFE39191)
-val WoodBrownLight = Color(0xFFD7B48A)
+// Dettaglio Mappa
+val SanMartinoMarkerRed = Color(0xFFAF2931)
+
+// Dark variants (generati in base alla palette per la modalità scura, se necessaria)
+val SanMartinoWineDark = Color(0xFF9B4C60)
+val SanMartinoGoldDark = Color(0xFFFFDB94)
+val SanMartinoCreamDark = Color(0xFF231D19)
+val SanMartinoInkDark = Color(0xFFEBE5DC)

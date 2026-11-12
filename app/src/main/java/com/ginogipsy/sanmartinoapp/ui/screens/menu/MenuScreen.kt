@@ -11,8 +11,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.outlined.Info
-import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -35,8 +33,10 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ginogipsy.sanmartinoapp.R
+import com.ginogipsy.sanmartinoapp.data.model.Language
 import com.ginogipsy.sanmartinoapp.data.model.MenuItem
 import com.ginogipsy.sanmartinoapp.data.model.MenuKind
+import com.ginogipsy.sanmartinoapp.i18n.LocalLanguage
 import com.ginogipsy.sanmartinoapp.ui.components.BilingualDescriptionDialog
 import com.ginogipsy.sanmartinoapp.ui.components.ErrorState
 import com.ginogipsy.sanmartinoapp.ui.components.LanguageToggle
@@ -63,15 +63,20 @@ fun MenuScreen(
         .orEmpty()
 
     Scaffold(
+        containerColor = androidx.compose.ui.graphics.Color.Transparent,
         topBar = {
             TopAppBar(
+                colors = androidx.compose.material3.TopAppBarDefaults.topAppBarColors(
+                    containerColor = androidx.compose.ui.graphics.Color.Transparent,
+                ),
                 title = {
                     Column {
-                        Text(stringResource(titleRes))
+                        com.ginogipsy.sanmartinoapp.ui.components.BrandTitle(stringResource(titleRes))
                         if (cantinaTitle.isNotBlank()) {
                             Text(
                                 text = cantinaTitle,
                                 style = MaterialTheme.typography.bodySmall,
+                                color = androidx.compose.ui.graphics.Color.White,
                             )
                         }
                     }
@@ -110,7 +115,20 @@ fun MenuScreen(
                             .padding(padding),
                         contentAlignment = Alignment.Center,
                     ) {
-                        Text(stringResource(R.string.menu_empty))
+                        androidx.compose.material3.Surface(
+                            shape = MaterialTheme.shapes.medium,
+                            color = MaterialTheme.colorScheme.surfaceVariant,
+                            contentColor = androidx.compose.ui.graphics.Color.Black,
+                            shadowElevation = 2.dp,
+                            modifier = Modifier.padding(24.dp),
+                        ) {
+                            Text(
+                                text = stringResource(R.string.menu_empty),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = androidx.compose.ui.graphics.Color.Black,
+                                modifier = Modifier.padding(horizontal = 20.dp, vertical = 14.dp),
+                            )
+                        }
                     }
                 } else {
                     LazyColumn(
@@ -122,10 +140,7 @@ fun MenuScreen(
                         contentPadding = androidx.compose.foundation.layout.PaddingValues(vertical = 16.dp),
                     ) {
                         items(items, key = { it.id }) { item ->
-                            MenuItemCard(
-                                item = item,
-                                onDescription = { dialogItem = item },
-                            )
+                            MenuItemCard(item = item)
                         }
                     }
                 }
@@ -143,12 +158,18 @@ fun MenuScreen(
 }
 
 @Composable
-private fun MenuItemCard(
-    item: MenuItem,
-    onDescription: () -> Unit,
-) {
+private fun MenuItemCard(item: MenuItem) {
+    val lang by LocalLanguage.current
+    val itemDesc = item.description.pick(lang)
+    val displayName = if (lang == Language.EN && item.description.en.isNotBlank()) {
+        item.description.en
+    } else {
+        item.name
+    }
+
     Card(
         modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -158,7 +179,7 @@ private fun MenuItemCard(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    text = item.name,
+                    text = displayName,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.weight(1f, fill = false),
@@ -172,17 +193,12 @@ private fun MenuItemCard(
                         MaterialTheme.colorScheme.error,
                 )
             }
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp),
-            ) {
-                AssistChip(
-                    onClick = onDescription,
-                    label = { Text(stringResource(R.string.action_description)) },
-                    leadingIcon = {
-                        Icon(Icons.Outlined.Info, contentDescription = null)
-                    },
+            if (itemDesc.isNotBlank() && itemDesc != displayName) {
+                Text(
+                    text = itemDesc,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 6.dp),
                 )
             }
         }
