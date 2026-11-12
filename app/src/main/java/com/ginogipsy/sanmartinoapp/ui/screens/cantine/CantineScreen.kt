@@ -52,6 +52,7 @@ import com.ginogipsy.sanmartinoapp.R
 import com.ginogipsy.sanmartinoapp.data.model.Cantina
 import com.ginogipsy.sanmartinoapp.data.model.MenuKind
 import com.ginogipsy.sanmartinoapp.data.search.CantinaSearchResult
+import com.ginogipsy.sanmartinoapp.i18n.LocalLanguage
 import com.ginogipsy.sanmartinoapp.ui.AppViewModelProvider
 import com.ginogipsy.sanmartinoapp.ui.components.BilingualDescriptionDialog
 import com.ginogipsy.sanmartinoapp.ui.components.CantinaNumberBadge
@@ -73,9 +74,13 @@ fun CantineScreen(
     var dialogCantina by remember { mutableStateOf<Cantina?>(null) }
 
     Scaffold(
+        containerColor = androidx.compose.ui.graphics.Color.Transparent,
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.cantine_title)) },
+                colors = androidx.compose.material3.TopAppBarDefaults.topAppBarColors(
+                    containerColor = androidx.compose.ui.graphics.Color.Transparent,
+                ),
+                title = { com.ginogipsy.sanmartinoapp.ui.components.BrandTitle(stringResource(R.string.cantine_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
@@ -208,8 +213,12 @@ private fun CantinaCard(
     onLocation: () -> Unit,
 ) {
     val cantina = result.cantina
+    val lang by LocalLanguage.current
+    val descriptionText = cantina.description.pick(lang)
+
     Card(
         modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -232,6 +241,27 @@ private fun CantinaCard(
                     }
                 }
             }
+
+            if (descriptionText.isNotBlank()) {
+                Text(
+                    text = descriptionText,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 8.dp),
+                )
+            }
+
+            val foodsToDisplay = if (cantina.foods.isNotEmpty()) cantina.foods else result.matchingFoods
+            if (foodsToDisplay.isNotEmpty()) {
+                Text(
+                    text = stringResource(R.string.action_food) + ": " + foodsToDisplay.joinToString(", ") { it.name },
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(top = 6.dp),
+                )
+            }
+
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
