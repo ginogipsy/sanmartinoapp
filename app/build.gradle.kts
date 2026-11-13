@@ -164,7 +164,7 @@ val openApiGenerateStands = tasks.register<GenerateTask>("openApiGenerateStands"
 }
 
 tasks.named("preBuild") {
-    dependsOn(openApiGenerateEvents, openApiGenerateStands)
+    dependsOn(openApiGenerateEvents, openApiGenerateStands, "adbReverse")
 }
 
 dependencies {
