@@ -4,10 +4,12 @@ import com.ginogipsy.sanmartinoapp.data.model.Cantina
 import com.ginogipsy.sanmartinoapp.data.model.LocalizedText
 import com.ginogipsy.sanmartinoapp.data.model.MenuItem
 import com.ginogipsy.sanmartinoapp.data.model.MenuKind
+import com.ginogipsy.sanmartinoapp.data.search.CantinaSearchResult
 import com.ginogipsy.sanmartinoapp.network.generated.stands.model.LocalizedTextDto
 import com.ginogipsy.sanmartinoapp.network.generated.stands.model.MenuItemDto
 import com.ginogipsy.sanmartinoapp.network.generated.stands.model.MenuKindDto
 import com.ginogipsy.sanmartinoapp.network.generated.stands.model.StandDetailDto
+import com.ginogipsy.sanmartinoapp.network.generated.stands.model.StandSearchResultDto
 import com.ginogipsy.sanmartinoapp.network.generated.stands.model.StandSummaryDto
 
 /**
@@ -46,6 +48,22 @@ fun StandDetailDto.toDomain(): Cantina {
     )
 }
 
+fun StandSearchResultDto.toDomain(cachedCantina: Cantina? = null): CantinaSearchResult {
+    val (matchedFoodsDto, matchedDrinksDto) = matchedItems.partition { it.kind == MenuKindDto.FOOD }
+    val matchingFoods = matchedFoodsDto.map { it.toDomain() }
+    val matchingDrinks = matchedDrinksDto.map { it.toDomain() }
+    val baseCantina = stand.toDomain().copy(
+        foods = cachedCantina?.foods?.takeIf { it.isNotEmpty() } ?: matchingFoods,
+        drinks = cachedCantina?.drinks?.takeIf { it.isNotEmpty() } ?: matchingDrinks,
+    )
+    return CantinaSearchResult(
+        cantina = baseCantina,
+        matchingFoods = matchingFoods,
+        matchingDrinks = matchingDrinks,
+        score = score,
+    )
+}
+
 internal fun MenuItemDto.toDomain(): MenuItem = MenuItem(
     id = id.toString(),
     name = name,
@@ -58,6 +76,11 @@ internal fun MenuItemDto.toDomain(): MenuItem = MenuItem(
 internal fun MenuKindDto.toDomain(): MenuKind = when (this) {
     MenuKindDto.FOOD -> MenuKind.FOOD
     MenuKindDto.DRINK -> MenuKind.DRINK
+}
+
+internal fun MenuKind.toDto(): MenuKindDto = when (this) {
+    MenuKind.FOOD -> MenuKindDto.FOOD
+    MenuKind.DRINK -> MenuKindDto.DRINK
 }
 
 internal fun LocalizedTextDto.toDomain(): LocalizedText =

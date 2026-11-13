@@ -273,7 +273,7 @@ private fun CantinaCard(
                 )
             }
 
-            val foodsToDisplay = if (cantina.foods.isNotEmpty()) cantina.foods else result.matchingFoods
+            val foodsToDisplay = if (result.matchingFoods.isNotEmpty()) result.matchingFoods else cantina.foods
             if (foodsToDisplay.isNotEmpty()) {
                 val foodNames = foodsToDisplay.joinToString(", ") { item ->
                     val desc = item.description.pick(lang)

@@ -4,11 +4,19 @@ on:
   push:
     branches:
       - master
+  workflow_call:
+    inputs:
+      manual_version:
+        description: 'Forza una versione specifica (es: 1.5.0). Lascia vuoto per logica automatica.'
+        required: false
+        type: string
+        default: ''
   workflow_dispatch:
     inputs:
       manual_version:
         description: 'Forza una versione specifica (es: 1.5.0). Lascia vuoto per logica automatica.'
         required: false
+        type: string
         default: ''
 
 jobs:
@@ -42,7 +50,7 @@ jobs:
           PR_NUMBER=$(echo "$COMMIT_MSG" | grep -oP 'Merge pull request #\K\d+' || true)
           
           INC_TYPE="patch"
-          REQ_VERSION="${{ github.event.inputs.manual_version }}"
+          REQ_VERSION="${{ inputs.manual_version || github.event.inputs.manual_version }}"
           BRANCH_NAME=""
 
           if [ ! -z "$REQ_VERSION" ]; then

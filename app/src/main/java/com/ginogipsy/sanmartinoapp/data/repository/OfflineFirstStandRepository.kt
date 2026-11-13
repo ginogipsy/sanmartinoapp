@@ -4,16 +4,18 @@ import com.ginogipsy.sanmartinoapp.data.local.dao.CantinaDao
 import com.ginogipsy.sanmartinoapp.data.local.entity.toDomain
 import com.ginogipsy.sanmartinoapp.data.local.entity.toEntity
 import com.ginogipsy.sanmartinoapp.data.model.Cantina
+import com.ginogipsy.sanmartinoapp.data.model.MenuKind
+import com.ginogipsy.sanmartinoapp.data.search.CantinaSearchResult
 import com.ginogipsy.sanmartinoapp.network.NetworkResult
 import com.ginogipsy.sanmartinoapp.network.generated.stands.api.StandsApi
 import com.ginogipsy.sanmartinoapp.network.map
 import com.ginogipsy.sanmartinoapp.network.mapper.toDomain
+import com.ginogipsy.sanmartinoapp.network.mapper.toDto
 import com.ginogipsy.sanmartinoapp.network.safeApiCall
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import java.util.UUID
@@ -62,6 +64,23 @@ class OfflineFirstStandRepository(
     override fun getStandStream(id: String): Flow<Cantina?> = flow {
         val entity = dao.getCantinaById(id)
         emit(entity?.toDomain())
+    }
+
+    override suspend fun searchStands(
+        query: String,
+        kind: MenuKind?,
+        onlyAvailable: Boolean,
+    ): NetworkResult<List<CantinaSearchResult>> {
+        val result = safeApiCall {
+            api.searchStands(
+                q = query,
+                kind = kind?.toDto(),
+                onlyAvailable = onlyAvailable,
+            )
+        }
+        return result.map { list ->
+            list.map { dto -> dto.toDomain() }
+        }
     }
 
     private suspend fun saveFullCantina(cantina: Cantina) {
