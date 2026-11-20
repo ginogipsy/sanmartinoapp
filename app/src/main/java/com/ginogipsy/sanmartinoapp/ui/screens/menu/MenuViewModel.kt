@@ -8,6 +8,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.ginogipsy.sanmartinoapp.data.model.Cantina
 import com.ginogipsy.sanmartinoapp.data.model.MenuItem
 import com.ginogipsy.sanmartinoapp.data.model.MenuKind
+import com.ginogipsy.sanmartinoapp.data.model.StandInteractionType
 import com.ginogipsy.sanmartinoapp.data.repository.StandRepository
 import com.ginogipsy.sanmartinoapp.ui.sanMartinoApplication
 import com.ginogipsy.sanmartinoapp.ui.state.UiState
@@ -52,6 +53,16 @@ class MenuViewModel(
     fun refresh() {
         viewModelScope.launch {
             standRepository.getStand(cantinaId)
+        }
+    }
+
+    fun onMenuItemClicked(item: MenuItem) {
+        viewModelScope.launch {
+            standRepository.recordInteraction(
+                standId = cantinaId,
+                interactionType = StandInteractionType.MENU_ITEM_CLICK,
+                menuItemId = item.id,
+            )
         }
     }
 
