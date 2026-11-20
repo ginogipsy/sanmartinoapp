@@ -11,6 +11,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -36,11 +38,14 @@ import com.ginogipsy.sanmartinoapp.R
 import com.ginogipsy.sanmartinoapp.data.model.Language
 import com.ginogipsy.sanmartinoapp.data.model.MenuItem
 import com.ginogipsy.sanmartinoapp.data.model.MenuKind
+import com.ginogipsy.sanmartinoapp.data.model.ReviewTargetType
 import com.ginogipsy.sanmartinoapp.i18n.LocalLanguage
+import com.ginogipsy.sanmartinoapp.ui.components.AccountTopBarAction
 import com.ginogipsy.sanmartinoapp.ui.components.BilingualDescriptionDialog
 import com.ginogipsy.sanmartinoapp.ui.components.ErrorState
 import com.ginogipsy.sanmartinoapp.ui.components.LanguageToggle
 import com.ginogipsy.sanmartinoapp.ui.components.LoadingState
+import com.ginogipsy.sanmartinoapp.ui.components.ReviewsDialog
 import com.ginogipsy.sanmartinoapp.ui.state.UiState
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -56,6 +61,7 @@ fun MenuScreen(
     )
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var dialogItem by remember { mutableStateOf<MenuItem?>(null) }
+    var reviewsItem by remember { mutableStateOf<MenuItem?>(null) }
 
     val titleRes = if (kind == MenuKind.FOOD) R.string.menu_title_food else R.string.menu_title_drinks
     val cantinaTitle = (uiState as? UiState.Success<MenuData>)?.data?.cantina
@@ -89,7 +95,10 @@ fun MenuScreen(
                         )
                     }
                 },
-                actions = { LanguageToggle() },
+                actions = {
+                    AccountTopBarAction()
+                    LanguageToggle()
+                },
             )
         },
     ) { padding ->
@@ -146,6 +155,9 @@ fun MenuScreen(
                                     dialogItem = item
                                     viewModel.onMenuItemClicked(item)
                                 },
+                                onReviews = {
+                                    reviewsItem = item
+                                },
                             )
                         }
                     }
@@ -161,12 +173,23 @@ fun MenuScreen(
             onDismiss = { dialogItem = null },
         )
     }
+
+    reviewsItem?.let { item ->
+        ReviewsDialog(
+            targetType = ReviewTargetType.MENU_ITEM,
+            targetId = item.id,
+            standId = cantinaId,
+            targetTitle = item.name,
+            onDismiss = { reviewsItem = null },
+        )
+    }
 }
 
 @Composable
 private fun MenuItemCard(
     item: MenuItem,
     onClick: () -> Unit,
+    onReviews: () -> Unit,
 ) {
     val lang by LocalLanguage.current
     val itemDesc = item.description.pick(lang)
@@ -209,6 +232,20 @@ private fun MenuItemCard(
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 6.dp),
+                )
+            }
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp),
+                horizontalArrangement = Arrangement.End,
+            ) {
+                AssistChip(
+                    onClick = onReviews,
+                    label = { Text(stringResource(R.string.action_reviews)) },
+                    leadingIcon = {
+                        Icon(Icons.Filled.Star, contentDescription = null)
+                    },
                 )
             }
         }
