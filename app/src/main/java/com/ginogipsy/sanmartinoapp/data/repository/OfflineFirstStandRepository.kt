@@ -5,9 +5,13 @@ import com.ginogipsy.sanmartinoapp.data.local.entity.toDomain
 import com.ginogipsy.sanmartinoapp.data.local.entity.toEntity
 import com.ginogipsy.sanmartinoapp.data.model.Cantina
 import com.ginogipsy.sanmartinoapp.data.model.MenuKind
+import com.ginogipsy.sanmartinoapp.data.model.StandInteractionType
 import com.ginogipsy.sanmartinoapp.data.search.CantinaSearchResult
 import com.ginogipsy.sanmartinoapp.network.NetworkResult
+import com.ginogipsy.sanmartinoapp.network.generated.stands.api.AnalyticsApi
 import com.ginogipsy.sanmartinoapp.network.generated.stands.api.StandsApi
+import com.ginogipsy.sanmartinoapp.network.generated.stands.model.StandInteractionCreateDto
+import com.ginogipsy.sanmartinoapp.network.generated.stands.model.StandInteractionTypeDto
 import com.ginogipsy.sanmartinoapp.network.map
 import com.ginogipsy.sanmartinoapp.network.mapper.toDomain
 import com.ginogipsy.sanmartinoapp.network.mapper.toDto
@@ -22,7 +26,8 @@ import java.util.UUID
 
 class OfflineFirstStandRepository(
     private val api: StandsApi,
-    private val dao: CantinaDao
+    private val dao: CantinaDao,
+    private val analyticsApi: AnalyticsApi? = null,
 ) : StandRepository {
 
     override fun getStandsStream(): Flow<List<Cantina>> =
@@ -81,6 +86,28 @@ class OfflineFirstStandRepository(
         return result.map { list ->
             list.map { dto -> dto.toDomain() }
         }
+    }
+
+    override suspend fun recordInteraction(
+        standId: String,
+        interactionType: StandInteractionType,
+        menuItemId: String?,
+        searchQuery: String?,
+    ): NetworkResult<Unit> {
+        val client = analyticsApi ?: return NetworkResult.Success(Unit)
+        val standUuid = runCatching { UUID.fromString(standId) }.getOrElse {
+            return NetworkResult.Error.Unknown(throwable = it, message = "standId non valido")
+        }
+        val itemUuid = menuItemId?.let {
+            runCatching { UUID.fromString(it) }.getOrNull()
+        }
+        val dto = StandInteractionCreateDto(
+            standId = standUuid,
+            interactionType = StandInteractionTypeDto.valueOf(interactionType.name),
+            menuItemId = itemUuid,
+            searchQuery = searchQuery?.takeIf { it.isNotBlank() }?.take(200),
+        )
+        return safeApiCall { client.recordInteraction(dto) }
     }
 
     private suspend fun saveFullCantina(cantina: Cantina) {

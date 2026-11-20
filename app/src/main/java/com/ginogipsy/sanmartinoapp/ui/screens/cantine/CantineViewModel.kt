@@ -2,6 +2,7 @@ package com.ginogipsy.sanmartinoapp.ui.screens.cantine
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ginogipsy.sanmartinoapp.data.model.StandInteractionType
 import com.ginogipsy.sanmartinoapp.data.repository.StandRepository
 import com.ginogipsy.sanmartinoapp.data.search.CantinaSearchResult
 import com.ginogipsy.sanmartinoapp.data.search.searchCantine
@@ -35,7 +36,7 @@ class CantineViewModel(
      * oppure null se la query è vuota o se il dispositivo è offline (fallback su Room).
      */
     private val remoteSearchResults = _query
-        .debounce(220)
+        .debounce(300)
         .distinctUntilChanged()
         .flatMapLatest { q ->
             flow {
@@ -103,5 +104,16 @@ class CantineViewModel(
 
     fun clearQuery() {
         _query.value = ""
+    }
+
+    fun recordStandInteraction(cantinaId: String, interactionType: StandInteractionType) {
+        val currentQuery = _query.value.trim().takeIf { it.isNotEmpty() }
+        viewModelScope.launch {
+            standRepository.recordInteraction(
+                standId = cantinaId,
+                interactionType = interactionType,
+                searchQuery = currentQuery,
+            )
+        }
     }
 }

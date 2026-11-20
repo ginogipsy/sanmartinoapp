@@ -2,6 +2,7 @@ package com.ginogipsy.sanmartinoapp.data.repository
 
 import com.ginogipsy.sanmartinoapp.data.model.Cantina
 import com.ginogipsy.sanmartinoapp.data.model.MenuKind
+import com.ginogipsy.sanmartinoapp.data.model.StandInteractionType
 import com.ginogipsy.sanmartinoapp.data.search.CantinaSearchResult
 import com.ginogipsy.sanmartinoapp.network.NetworkResult
 import kotlinx.coroutines.flow.Flow
@@ -28,4 +29,15 @@ interface StandRepository {
         kind: MenuKind? = null,
         onlyAvailable: Boolean = false,
     ): NetworkResult<List<CantinaSearchResult>>
+
+    /**
+     * Registra un click su un piatto o un'interazione con una cantina
+     * su `/v1/stands/analytics/interactions`.
+     */
+    suspend fun recordInteraction(
+        standId: String,
+        interactionType: StandInteractionType,
+        menuItemId: String? = null,
+        searchQuery: String? = null,
+    ): NetworkResult<Unit>
 }

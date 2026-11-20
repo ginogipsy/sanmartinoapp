@@ -140,7 +140,13 @@ fun MenuScreen(
                         contentPadding = androidx.compose.foundation.layout.PaddingValues(vertical = 16.dp),
                     ) {
                         items(items, key = { it.id }) { item ->
-                            MenuItemCard(item = item)
+                            MenuItemCard(
+                                item = item,
+                                onClick = {
+                                    dialogItem = item
+                                    viewModel.onMenuItemClicked(item)
+                                },
+                            )
                         }
                     }
                 }
@@ -158,7 +164,10 @@ fun MenuScreen(
 }
 
 @Composable
-private fun MenuItemCard(item: MenuItem) {
+private fun MenuItemCard(
+    item: MenuItem,
+    onClick: () -> Unit,
+) {
     val lang by LocalLanguage.current
     val itemDesc = item.description.pick(lang)
     val displayName = if (lang == Language.EN && item.description.en.isNotBlank()) {
@@ -168,6 +177,7 @@ private fun MenuItemCard(item: MenuItem) {
     }
 
     Card(
+        onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),

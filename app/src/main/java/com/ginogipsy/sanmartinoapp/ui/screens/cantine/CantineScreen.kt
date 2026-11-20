@@ -53,6 +53,7 @@ import com.ginogipsy.sanmartinoapp.R
 import com.ginogipsy.sanmartinoapp.data.model.Cantina
 import com.ginogipsy.sanmartinoapp.data.model.Language
 import com.ginogipsy.sanmartinoapp.data.model.MenuKind
+import com.ginogipsy.sanmartinoapp.data.model.StandInteractionType
 import com.ginogipsy.sanmartinoapp.data.search.CantinaSearchResult
 import com.ginogipsy.sanmartinoapp.i18n.LocalLanguage
 import com.ginogipsy.sanmartinoapp.ui.AppViewModelProvider
@@ -150,10 +151,34 @@ fun CantineScreen(
                                 CantinaCard(
                                     result = result,
                                     showMatchCount = query.isNotBlank(),
-                                    onDescription = { dialogCantina = result.cantina },
-                                    onFood = { onOpenMenu(result.cantina.id, MenuKind.FOOD) },
-                                    onDrinks = { onOpenMenu(result.cantina.id, MenuKind.DRINK) },
-                                    onLocation = { openMaps(context, result.cantina) },
+                                    onDescription = {
+                                        viewModel.recordStandInteraction(
+                                            result.cantina.id,
+                                            StandInteractionType.STAND_DESCRIPTION_OPEN,
+                                        )
+                                        dialogCantina = result.cantina
+                                    },
+                                    onFood = {
+                                        viewModel.recordStandInteraction(
+                                            result.cantina.id,
+                                            StandInteractionType.STAND_FOOD_OPEN,
+                                        )
+                                        onOpenMenu(result.cantina.id, MenuKind.FOOD)
+                                    },
+                                    onDrinks = {
+                                        viewModel.recordStandInteraction(
+                                            result.cantina.id,
+                                            StandInteractionType.STAND_DRINK_OPEN,
+                                        )
+                                        onOpenMenu(result.cantina.id, MenuKind.DRINK)
+                                    },
+                                    onLocation = {
+                                        viewModel.recordStandInteraction(
+                                            result.cantina.id,
+                                            StandInteractionType.STAND_MAP_OPEN,
+                                        )
+                                        openMaps(context, result.cantina)
+                                    },
                                 )
                             }
                         }

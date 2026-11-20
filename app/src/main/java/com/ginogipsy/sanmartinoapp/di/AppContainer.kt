@@ -9,6 +9,7 @@ import com.ginogipsy.sanmartinoapp.data.repository.RemoteEventRepository
 import com.ginogipsy.sanmartinoapp.data.repository.StandRepository
 import com.ginogipsy.sanmartinoapp.network.HttpClient
 import com.ginogipsy.sanmartinoapp.network.generated.events.api.EventsApi
+import com.ginogipsy.sanmartinoapp.network.generated.stands.api.AnalyticsApi
 import com.ginogipsy.sanmartinoapp.network.generated.stands.api.StandsApi
 import retrofit2.Retrofit
 
@@ -34,6 +35,10 @@ class DefaultAppContainer(private val context: Context) : AppContainer {
         retrofit.create(StandsApi::class.java)
     }
 
+    private val analyticsApi: AnalyticsApi by lazy {
+        retrofit.create(AnalyticsApi::class.java)
+    }
+
     private val database: AppDatabase by lazy {
         Room.databaseBuilder(context, AppDatabase::class.java, "san_martino_db")
             .fallbackToDestructiveMigration()
@@ -45,6 +50,6 @@ class DefaultAppContainer(private val context: Context) : AppContainer {
     }
 
     override val standRepository: StandRepository by lazy {
-        OfflineFirstStandRepository(standsApi, database.cantinaDao())
+        OfflineFirstStandRepository(standsApi, database.cantinaDao(), analyticsApi)
     }
 }
