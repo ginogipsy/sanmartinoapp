@@ -85,3 +85,19 @@ internal fun MenuKind.toDto(): MenuKindDto = when (this) {
 
 internal fun LocalizedTextDto.toDomain(): LocalizedText =
     LocalizedText(it = `it`, en = en)
+
+fun com.ginogipsy.sanmartinoapp.network.generated.stands.model.FestivalReviewDto.toDomain():
+    com.ginogipsy.sanmartinoapp.data.model.FestivalReview =
+    com.ginogipsy.sanmartinoapp.data.model.FestivalReview(
+        id = id.toString(),
+        targetType = com.ginogipsy.sanmartinoapp.data.model.ReviewTargetType.valueOf(targetType.name),
+        targetId = targetId.toString(),
+        standId = standId?.toString(),
+        targetName = targetName,
+        authorUserId = authorUserId,
+        authorUsername = authorUsername,
+        rating = rating,
+        comment = comment,
+        status = com.ginogipsy.sanmartinoapp.data.model.ReviewStatus.valueOf(status.name),
+        createdAt = createdAt,
+    )

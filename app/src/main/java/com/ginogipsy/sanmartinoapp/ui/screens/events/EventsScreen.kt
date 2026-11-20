@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Storefront
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -33,11 +34,14 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ginogipsy.sanmartinoapp.R
 import com.ginogipsy.sanmartinoapp.data.model.Event
+import com.ginogipsy.sanmartinoapp.data.model.ReviewTargetType
 import com.ginogipsy.sanmartinoapp.ui.AppViewModelProvider
+import com.ginogipsy.sanmartinoapp.ui.components.AccountTopBarAction
 import com.ginogipsy.sanmartinoapp.ui.components.BilingualDescriptionDialog
 import com.ginogipsy.sanmartinoapp.ui.components.ErrorState
 import com.ginogipsy.sanmartinoapp.ui.components.LanguageToggle
 import com.ginogipsy.sanmartinoapp.ui.components.LoadingState
+import com.ginogipsy.sanmartinoapp.ui.components.ReviewsDialog
 import com.ginogipsy.sanmartinoapp.ui.state.UiState
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -50,6 +54,7 @@ fun EventsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var dialogEvent by remember { mutableStateOf<Event?>(null) }
+    var reviewsEvent by remember { mutableStateOf<Event?>(null) }
 
     Scaffold(
         containerColor = androidx.compose.ui.graphics.Color.Transparent,
@@ -59,7 +64,10 @@ fun EventsScreen(
                     containerColor = androidx.compose.ui.graphics.Color.Transparent,
                 ),
                 title = { com.ginogipsy.sanmartinoapp.ui.components.BrandTitle(stringResource(R.string.events_title)) },
-                actions = { LanguageToggle() },
+                actions = {
+                    AccountTopBarAction()
+                    LanguageToggle()
+                },
             )
         },
     ) { padding ->
@@ -79,6 +87,7 @@ fun EventsScreen(
             is UiState.Success -> EventsList(
                 data = state.data,
                 onDescription = { dialogEvent = it },
+                onReviews = { reviewsEvent = it },
                 onOpenCantine = onOpenCantine,
                 modifier = Modifier
                     .fillMaxSize()
@@ -94,12 +103,22 @@ fun EventsScreen(
             onDismiss = { dialogEvent = null },
         )
     }
+
+    reviewsEvent?.let { event ->
+        ReviewsDialog(
+            targetType = ReviewTargetType.EVENT,
+            targetId = event.id,
+            targetTitle = event.name,
+            onDismiss = { reviewsEvent = null },
+        )
+    }
 }
 
 @Composable
 private fun EventsList(
     data: EventsData,
     onDescription: (Event) -> Unit,
+    onReviews: (Event) -> Unit,
     onOpenCantine: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -115,6 +134,7 @@ private fun EventsList(
                     event = event,
                     showCantineButton = true,
                     onDescription = { onDescription(event) },
+                    onReviews = { onReviews(event) },
                     onOpenCantine = onOpenCantine,
                 )
             }
@@ -126,6 +146,7 @@ private fun EventsList(
                     event = event,
                     showCantineButton = false,
                     onDescription = { onDescription(event) },
+                    onReviews = { onReviews(event) },
                     onOpenCantine = onOpenCantine,
                 )
             }
@@ -157,6 +178,7 @@ private fun EventCard(
     event: Event,
     showCantineButton: Boolean,
     onDescription: () -> Unit,
+    onReviews: () -> Unit,
     onOpenCantine: () -> Unit,
 ) {
     Card(
@@ -191,15 +213,26 @@ private fun EventCard(
                 OutlinedButton(onClick = onDescription) {
                     Text(stringResource(R.string.action_description))
                 }
-                if (showCantineButton) {
-                    Button(onClick = onOpenCantine) {
-                        Icon(
-                            imageVector = Icons.Filled.Storefront,
-                            contentDescription = null,
-                            modifier = Modifier.padding(end = 6.dp),
-                        )
-                        Text(stringResource(R.string.action_open_cantine))
-                    }
+                OutlinedButton(onClick = onReviews) {
+                    Icon(
+                        imageVector = Icons.Filled.Star,
+                        contentDescription = null,
+                        modifier = Modifier.padding(end = 4.dp),
+                    )
+                    Text(stringResource(R.string.action_reviews))
+                }
+            }
+            if (showCantineButton) {
+                Button(
+                    onClick = onOpenCantine,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Storefront,
+                        contentDescription = null,
+                        modifier = Modifier.padding(end = 6.dp),
+                    )
+                    Text(stringResource(R.string.action_open_cantine))
                 }
             }
         }

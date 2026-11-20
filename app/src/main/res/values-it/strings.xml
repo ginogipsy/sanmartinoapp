@@ -17,6 +17,7 @@
     <string name="action_food">Cibo</string>
     <string name="action_drinks">Bevande</string>
     <string name="action_location">Posizione</string>
+    <string name="action_reviews">Recensioni</string>
     <string name="action_close">Chiudi</string>
     <string name="action_back">Indietro</string>
     <string name="search_placeholder">Cerca quello che vuoi mangiare!</string>
@@ -29,4 +30,36 @@
         <item quantity="one">%1$d piatto trovato</item>
         <item quantity="other">%1$d piatti trovati</item>
     </plurals>
+    <string name="auth_account_cd">Account</string>
+    <string name="auth_login_title">Accedi</string>
+    <string name="auth_register_title">Crea account</string>
+    <string name="auth_profile_title">Il tuo account</string>
+    <string name="auth_logged_as">Connesso come %1$s</string>
+    <string name="auth_profile_hint">Puoi lasciare voti e recensioni su piatti, cantine ed eventi.</string>
+    <string name="auth_tab_login">Accedi</string>
+    <string name="auth_tab_register">Registrati</string>
+    <string name="auth_field_username">Username</string>
+    <string name="auth_field_email">Email</string>
+    <string name="auth_field_first_name">Nome (opzionale)</string>
+    <string name="auth_field_last_name">Cognome (opzionale)</string>
+    <string name="auth_field_password">Password</string>
+    <string name="auth_field_confirm_password">Conferma password</string>
+    <string name="auth_action_login">Accedi</string>
+    <string name="auth_action_register">Crea account</string>
+    <string name="auth_action_logout">Esci</string>
+    <string name="auth_err_invalid_credentials">Username o password non corretti.</string>
+    <string name="auth_err_user_exists">Questo username o indirizzo email è già registrato.</string>
+    <string name="auth_err_password_short">La password deve contenere almeno 6 caratteri.</string>
+    <string name="auth_err_password_mismatch">Le password inserite non coincidono.</string>
+    <string name="auth_err_invalid_data">Dati non validi: controlla l\'indirizzo email e la password.</string>
+    <string name="auth_err_forbidden">Servizio di registrazione non autorizzato su Keycloak. Riprova.</string>
+    <string name="auth_err_network">Impossibile contattare il server. Verifica la connessione.</string>
+    <string name="auth_err_generic">Impossibile completare l\'operazione. Riprova tra poco.</string>
+    <string name="reviews_dialog_title">Recensioni</string>
+    <string name="reviews_empty">Nessuna recensione approvata ancora. Scrivi la prima!</string>
+    <string name="reviews_login_prompt">Accedi dall\'icona in alto per lasciare una recensione.</string>
+    <string name="reviews_write_header">Lascia una recensione come @%1$s</string>
+    <string name="reviews_comment_label">Il tuo commento (opzionale)</string>
+    <string name="reviews_action_submit">Invia recensione</string>
+    <string name="reviews_submitted_pending">Recensione inviata! Sarà visibile dopo l\'approvazione del moderatore.</string>
 </resources>

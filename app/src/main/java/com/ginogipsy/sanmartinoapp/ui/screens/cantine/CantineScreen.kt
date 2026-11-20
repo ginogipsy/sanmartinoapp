@@ -20,6 +20,7 @@ import androidx.compose.material.icons.filled.LocalBar
 import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.Place
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Card
@@ -53,15 +54,18 @@ import com.ginogipsy.sanmartinoapp.R
 import com.ginogipsy.sanmartinoapp.data.model.Cantina
 import com.ginogipsy.sanmartinoapp.data.model.Language
 import com.ginogipsy.sanmartinoapp.data.model.MenuKind
+import com.ginogipsy.sanmartinoapp.data.model.ReviewTargetType
 import com.ginogipsy.sanmartinoapp.data.model.StandInteractionType
 import com.ginogipsy.sanmartinoapp.data.search.CantinaSearchResult
 import com.ginogipsy.sanmartinoapp.i18n.LocalLanguage
 import com.ginogipsy.sanmartinoapp.ui.AppViewModelProvider
+import com.ginogipsy.sanmartinoapp.ui.components.AccountTopBarAction
 import com.ginogipsy.sanmartinoapp.ui.components.BilingualDescriptionDialog
 import com.ginogipsy.sanmartinoapp.ui.components.CantinaNumberBadge
 import com.ginogipsy.sanmartinoapp.ui.components.ErrorState
 import com.ginogipsy.sanmartinoapp.ui.components.LanguageToggle
 import com.ginogipsy.sanmartinoapp.ui.components.LoadingState
+import com.ginogipsy.sanmartinoapp.ui.components.ReviewsDialog
 import com.ginogipsy.sanmartinoapp.ui.state.UiState
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -75,6 +79,7 @@ fun CantineScreen(
     val resultsState by viewModel.results.collectAsStateWithLifecycle()
     val query by viewModel.query.collectAsStateWithLifecycle()
     var dialogCantina by remember { mutableStateOf<Cantina?>(null) }
+    var reviewsCantina by remember { mutableStateOf<Cantina?>(null) }
 
     Scaffold(
         containerColor = androidx.compose.ui.graphics.Color.Transparent,
@@ -92,7 +97,10 @@ fun CantineScreen(
                         )
                     }
                 },
-                actions = { LanguageToggle() },
+                actions = {
+                    AccountTopBarAction()
+                    LanguageToggle()
+                },
             )
         },
     ) { padding ->
@@ -179,6 +187,9 @@ fun CantineScreen(
                                         )
                                         openMaps(context, result.cantina)
                                     },
+                                    onReviews = {
+                                        reviewsCantina = result.cantina
+                                    },
                                 )
                             }
                         }
@@ -203,6 +214,16 @@ fun CantineScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             },
+        )
+    }
+
+    reviewsCantina?.let { cantina ->
+        ReviewsDialog(
+            targetType = ReviewTargetType.STAND,
+            targetId = cantina.id,
+            standId = cantina.id,
+            targetTitle = "${cantina.number} — ${cantina.name}",
+            onDismiss = { reviewsCantina = null },
         )
     }
 }
@@ -258,6 +279,7 @@ private fun CantinaCard(
     onFood: () -> Unit,
     onDrinks: () -> Unit,
     onLocation: () -> Unit,
+    onReviews: () -> Unit,
 ) {
     val cantina = result.cantina
     val lang by LocalLanguage.current
@@ -331,6 +353,13 @@ private fun CantinaCard(
                     label = { Text(stringResource(R.string.action_location)) },
                     leadingIcon = {
                         Icon(Icons.Filled.Place, contentDescription = null)
+                    },
+                )
+                AssistChip(
+                    onClick = onReviews,
+                    label = { Text(stringResource(R.string.action_reviews)) },
+                    leadingIcon = {
+                        Icon(Icons.Filled.Star, contentDescription = null)
                     },
                 )
             }
