@@ -364,6 +364,42 @@ private fun CantinaCard(
                             modifier = Modifier.padding(top = 4.dp),
                         )
                     }
+                    if (cantina.activeOrdersCount > 0 || cantina.currentServingOrderNumber > 0) {
+                        val queueText = if (lang == Language.EN) {
+                            buildString {
+                                if (cantina.currentServingOrderNumber > 0) {
+                                    append("Serving #${cantina.currentServingOrderNumber.toString().padStart(4, '0')}")
+                                }
+                                if (cantina.activeOrdersCount > 0) {
+                                    if (isNotEmpty()) append(" • ")
+                                    append("Queue: ${cantina.activeOrdersCount} (~${cantina.estimatedWaitMinutes} min)")
+                                }
+                            }
+                        } else {
+                            buildString {
+                                if (cantina.currentServingOrderNumber > 0) {
+                                    append("In uscita #${cantina.currentServingOrderNumber.toString().padStart(4, '0')}")
+                                }
+                                if (cantina.activeOrdersCount > 0) {
+                                    if (isNotEmpty()) append(" • ")
+                                    append("In coda: ${cantina.activeOrdersCount} (~${cantina.estimatedWaitMinutes} min)")
+                                }
+                            }
+                        }
+                        Surface(
+                            color = MaterialTheme.colorScheme.secondaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                            shape = MaterialTheme.shapes.small,
+                            modifier = Modifier.padding(top = 4.dp),
+                        ) {
+                            Text(
+                                text = "⚡ $queueText",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.SemiBold,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                            )
+                        }
+                    }
                 }
                 IconButton(onClick = onToggleFavorite) {
                     Icon(
