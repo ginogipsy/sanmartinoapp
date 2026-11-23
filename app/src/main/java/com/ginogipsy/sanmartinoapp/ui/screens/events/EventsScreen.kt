@@ -141,10 +141,11 @@ private fun EventsList(
         }
         if (data.past.isNotEmpty()) {
             item { SectionHeader(stringResource(R.string.events_section_past)) }
+            val latestPastId = data.past.firstOrNull()?.id
             items(data.past, key = { it.id }) { event ->
                 EventCard(
                     event = event,
-                    showCantineButton = false,
+                    showCantineButton = data.upcoming.isEmpty() && event.id == latestPastId,
                     onDescription = { onDescription(event) },
                     onReviews = { onReviews(event) },
                     onOpenCantine = onOpenCantine,
