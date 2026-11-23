@@ -31,6 +31,9 @@ fun StandSummaryDto.toDomain(): Cantina = Cantina(
     longitude = longitude,
     foods = emptyList(),
     drinks = emptyList(),
+    activeOrdersCount = activeOrdersCount ?: 0,
+    currentServingOrderNumber = currentServingOrderNumber ?: 0,
+    estimatedWaitMinutes = estimatedWaitMinutes ?: 0,
 )
 
 fun StandDetailDto.toDomain(): Cantina {
@@ -45,6 +48,9 @@ fun StandDetailDto.toDomain(): Cantina {
         longitude = longitude,
         foods = foods.map { it.toDomain() },
         drinks = drinks.map { it.toDomain() },
+        activeOrdersCount = activeOrdersCount ?: 0,
+        currentServingOrderNumber = currentServingOrderNumber ?: 0,
+        estimatedWaitMinutes = estimatedWaitMinutes ?: 0,
     )
 }
 

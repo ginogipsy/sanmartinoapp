@@ -10,4 +10,7 @@ data class Cantina(
     val longitude: Double,
     val foods: List<MenuItem>,
     val drinks: List<MenuItem>,
+    val activeOrdersCount: Int = 0,
+    val currentServingOrderNumber: Int = 0,
+    val estimatedWaitMinutes: Int = 0,
 )
