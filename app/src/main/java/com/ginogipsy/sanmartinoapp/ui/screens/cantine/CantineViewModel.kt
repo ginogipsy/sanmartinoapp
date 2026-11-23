@@ -3,6 +3,8 @@ package com.ginogipsy.sanmartinoapp.ui.screens.cantine
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ginogipsy.sanmartinoapp.data.model.StandInteractionType
+import com.ginogipsy.sanmartinoapp.data.repository.AuthRepository
+import com.ginogipsy.sanmartinoapp.data.repository.FavoritesRepository
 import com.ginogipsy.sanmartinoapp.data.repository.StandRepository
 import com.ginogipsy.sanmartinoapp.data.search.CantinaSearchResult
 import com.ginogipsy.sanmartinoapp.data.search.searchCantine
@@ -25,16 +27,19 @@ import kotlinx.coroutines.launch
 @OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
 class CantineViewModel(
     private val standRepository: StandRepository,
+    private val favoritesRepository: FavoritesRepository? = null,
+    private val authRepository: AuthRepository? = null,
 ) : ViewModel() {
 
     private val _query = MutableStateFlow("")
-
     val query: StateFlow<String> = _query.asStateFlow()
 
-    /**
-     * Risultati della ricerca server-side (`/v1/stands/search?q=...`) con debounce,
-     * oppure null se la query è vuota o se il dispositivo è offline (fallback su Room).
-     */
+    private val _onlyFavorites = MutableStateFlow(false)
+    val onlyFavorites: StateFlow<Boolean> = _onlyFavorites.asStateFlow()
+
+    val favoriteStandIds: StateFlow<Set<String>> =
+        favoritesRepository?.favoriteStandIds ?: MutableStateFlow(emptySet())
+
     private val remoteSearchResults = _query
         .debounce(300)
         .distinctUntilChanged()
@@ -52,36 +57,33 @@ class CantineViewModel(
             }
         }
 
-    /**
-     * Lo stato della lista filtrato e ordinato per rilevanza (`score`).
-     * Usa i risultati dell'algoritmo server-side `/v1/stands/search` quando disponibili,
-     * arricchiti con il menu locale e con fallback trasparente offline su `searchCantine`.
-     */
     val results: StateFlow<UiState<List<CantinaSearchResult>>> =
         combine(
             standRepository.getStandsStream(),
             _query,
             remoteSearchResults,
-        ) { cantine, q, remoteHits ->
+            _onlyFavorites,
+            favoriteStandIds,
+        ) { cantine, q, remoteHits, filterFavorites, favIds ->
             val sortedCantine = cantine.sortedBy { it.number }
-            if (q.isBlank()) {
-                UiState.Success(searchCantine("", sortedCantine))
+            val baseList = if (q.isBlank()) {
+                searchCantine("", sortedCantine)
             } else if (remoteHits != null) {
                 val localById = sortedCantine.associateBy { it.id }
-                val merged = remoteHits.map { hit ->
+                remoteHits.map { hit ->
                     val cached = localById[hit.cantina.id]
-                    if (cached != null) {
-                        hit.copy(
-                            cantina = cached,
-                        )
-                    } else {
-                        hit
-                    }
+                    if (cached != null) hit.copy(cantina = cached) else hit
                 }
-                UiState.Success(merged)
             } else {
-                UiState.Success(searchCantine(q, sortedCantine))
+                searchCantine(q, sortedCantine)
             }
+
+            val finalList = if (filterFavorites) {
+                baseList.filter { favIds.contains(it.cantina.id) }
+            } else {
+                baseList
+            }
+            UiState.Success(finalList)
         }.stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5_000),
@@ -90,11 +92,19 @@ class CantineViewModel(
 
     init {
         refresh()
+        viewModelScope.launch {
+            authRepository?.currentUser?.collect { user ->
+                if (user != null) {
+                    favoritesRepository?.syncWithRemote()
+                }
+            }
+        }
     }
 
     fun refresh() {
         viewModelScope.launch {
             standRepository.refreshStands()
+            favoritesRepository?.syncWithRemote()
         }
     }
 
@@ -104,6 +114,20 @@ class CantineViewModel(
 
     fun clearQuery() {
         _query.value = ""
+    }
+
+    fun toggleOnlyFavorites() {
+        _onlyFavorites.value = !_onlyFavorites.value
+    }
+
+    fun setOnlyFavorites(onlyFavorites: Boolean) {
+        _onlyFavorites.value = onlyFavorites
+    }
+
+    fun toggleFavorite(cantinaId: String) {
+        viewModelScope.launch {
+            favoritesRepository?.toggleFavorite(cantinaId)
+        }
     }
 
     fun recordStandInteraction(cantinaId: String, interactionType: StandInteractionType) {

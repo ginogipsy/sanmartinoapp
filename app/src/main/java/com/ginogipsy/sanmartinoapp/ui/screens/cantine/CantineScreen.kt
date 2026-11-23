@@ -16,6 +16,8 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.LocalBar
 import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.Place
@@ -26,6 +28,8 @@ import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -42,6 +46,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -78,15 +83,17 @@ fun CantineScreen(
     val context = LocalContext.current
     val resultsState by viewModel.results.collectAsStateWithLifecycle()
     val query by viewModel.query.collectAsStateWithLifecycle()
+    val onlyFavorites by viewModel.onlyFavorites.collectAsStateWithLifecycle()
+    val favoriteStandIds by viewModel.favoriteStandIds.collectAsStateWithLifecycle()
     var dialogCantina by remember { mutableStateOf<Cantina?>(null) }
     var reviewsCantina by remember { mutableStateOf<Cantina?>(null) }
 
     Scaffold(
-        containerColor = androidx.compose.ui.graphics.Color.Transparent,
+        containerColor = Color.Transparent,
         topBar = {
             TopAppBar(
                 colors = androidx.compose.material3.TopAppBarDefaults.topAppBarColors(
-                    containerColor = androidx.compose.ui.graphics.Color.Transparent,
+                    containerColor = Color.Transparent,
                 ),
                 title = { com.ginogipsy.sanmartinoapp.ui.components.BrandTitle(stringResource(R.string.cantine_title)) },
                 navigationIcon = {
@@ -115,8 +122,48 @@ fun CantineScreen(
                 onClear = viewModel::clearQuery,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
             )
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+                    .padding(bottom = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                FilterChip(
+                    selected = !onlyFavorites,
+                    onClick = { viewModel.setOnlyFavorites(false) },
+                    label = { Text(stringResource(R.string.favorites_filter_all)) },
+                    colors = FilterChipDefaults.filterChipColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.9f),
+                        labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    ),
+                )
+                FilterChip(
+                    selected = onlyFavorites,
+                    onClick = { viewModel.toggleOnlyFavorites() },
+                    label = {
+                        Text(
+                            stringResource(
+                                R.string.favorites_filter_only,
+                                favoriteStandIds.size,
+                            )
+                        )
+                    },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = if (onlyFavorites) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
+                            contentDescription = null,
+                        )
+                    },
+                    colors = FilterChipDefaults.filterChipColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.9f),
+                        labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    ),
+                )
+            }
 
             when (val state = resultsState) {
                 is UiState.Loading -> LoadingState(modifier = Modifier.fillMaxSize())
@@ -135,14 +182,17 @@ fun CantineScreen(
                             Surface(
                                 shape = MaterialTheme.shapes.medium,
                                 color = MaterialTheme.colorScheme.surfaceVariant,
-                                contentColor = androidx.compose.ui.graphics.Color.Black,
+                                contentColor = Color.Black,
                                 shadowElevation = 2.dp,
                                 modifier = Modifier.padding(24.dp),
                             ) {
                                 Text(
-                                    text = stringResource(R.string.search_no_results),
+                                    text = if (onlyFavorites && query.isBlank())
+                                        stringResource(R.string.favorites_empty)
+                                    else
+                                        stringResource(R.string.search_no_results),
                                     style = MaterialTheme.typography.bodyMedium,
-                                    color = androidx.compose.ui.graphics.Color.Black,
+                                    color = Color.Black,
                                     modifier = Modifier.padding(horizontal = 20.dp, vertical = 14.dp),
                                 )
                             }
@@ -159,6 +209,10 @@ fun CantineScreen(
                                 CantinaCard(
                                     result = result,
                                     showMatchCount = query.isNotBlank(),
+                                    isFavorite = favoriteStandIds.contains(result.cantina.id),
+                                    onToggleFavorite = {
+                                        viewModel.toggleFavorite(result.cantina.id)
+                                    },
                                     onDescription = {
                                         viewModel.recordStandInteraction(
                                             result.cantina.id,
@@ -257,8 +311,8 @@ private fun SearchField(
         singleLine = true,
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
         colors = OutlinedTextFieldDefaults.colors(
-            focusedContainerColor = androidx.compose.ui.graphics.Color.White,
-            unfocusedContainerColor = androidx.compose.ui.graphics.Color.White,
+            focusedContainerColor = Color.White,
+            unfocusedContainerColor = Color.White,
             focusedTextColor = MaterialTheme.colorScheme.onSurface,
             unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
             focusedPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -275,6 +329,8 @@ private fun SearchField(
 private fun CantinaCard(
     result: CantinaSearchResult,
     showMatchCount: Boolean,
+    isFavorite: Boolean,
+    onToggleFavorite: () -> Unit,
     onDescription: () -> Unit,
     onFood: () -> Unit,
     onDrinks: () -> Unit,
@@ -308,6 +364,15 @@ private fun CantinaCard(
                             modifier = Modifier.padding(top = 4.dp),
                         )
                     }
+                }
+                IconButton(onClick = onToggleFavorite) {
+                    Icon(
+                        imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
+                        contentDescription = stringResource(
+                            if (isFavorite) R.string.favorites_remove_cd else R.string.favorites_add_cd
+                        ),
+                        tint = if (isFavorite) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
             }
 

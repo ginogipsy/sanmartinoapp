@@ -23,6 +23,11 @@
     <string name="search_placeholder">Cerca quello che vuoi mangiare!</string>
     <string name="search_clear_cd">Pulisci ricerca</string>
     <string name="search_no_results">Nessuna cantina serve qualcosa di simile.</string>
+    <string name="favorites_filter_all">Tutte le cantine</string>
+    <string name="favorites_filter_only">Dove voglio andare (%1$d)</string>
+    <string name="favorites_add_cd">Aggiungi a dove voglio andare</string>
+    <string name="favorites_remove_cd">Rimuovi da dove voglio andare</string>
+    <string name="favorites_empty">Non hai ancora salvato nessuna cantina. Tocca il cuore sulle cantine dove vuoi andare!</string>
     <string name="state_loading">Caricamento…</string>
     <string name="state_error_title">Impossibile caricare i dati</string>
     <string name="action_retry">Riprova</string>

@@ -23,6 +23,11 @@
     <string name="search_placeholder">Look for something to eat!</string>
     <string name="search_clear_cd">Clear search</string>
     <string name="search_no_results">No stand is serving anything like that.</string>
+    <string name="favorites_filter_all">All stands</string>
+    <string name="favorites_filter_only">Where I plan to go (%1$d)</string>
+    <string name="favorites_add_cd">Add to where I plan to go</string>
+    <string name="favorites_remove_cd">Remove from where I plan to go</string>
+    <string name="favorites_empty">You haven\'t saved any stands yet. Tap the heart on the stands you plan to visit!</string>
     <string name="state_loading">Loading…</string>
     <string name="state_error_title">Couldn\'t load data</string>
     <string name="action_retry">Retry</string>

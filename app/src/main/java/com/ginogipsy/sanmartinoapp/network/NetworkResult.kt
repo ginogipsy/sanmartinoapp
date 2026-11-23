@@ -56,10 +56,6 @@ inline fun <T, R> NetworkResult<T>.map(transform: (T) -> R): NetworkResult<R> = 
 
 /**
  * Esegue una chiamata Retrofit `suspend` e la incapsula in un [NetworkResult].
- *
- * Il client generato da OpenAPI Generator ritorna `Response<T>` (non `T` diretto):
- * qui distinguiamo `isSuccessful` + body non-null dal resto e mappiamo le eccezioni
- * piu' comuni.
  */
 suspend fun <T> safeApiCall(call: suspend () -> Response<T>): NetworkResult<T> {
     return try {
@@ -68,6 +64,9 @@ suspend fun <T> safeApiCall(call: suspend () -> Response<T>): NetworkResult<T> {
             val body = response.body()
             if (body != null) {
                 NetworkResult.Success(body)
+            } else if (response.code() == 204 || response.code() == 205) {
+                @Suppress("UNCHECKED_CAST")
+                NetworkResult.Success(Unit as T)
             } else {
                 NetworkResult.Error.Http(
                     code = response.code(),
