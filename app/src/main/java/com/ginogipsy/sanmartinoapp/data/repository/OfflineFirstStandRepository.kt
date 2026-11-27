@@ -27,6 +27,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import java.util.UUID
@@ -38,57 +39,106 @@ class OfflineFirstStandRepository(
     private val reviewsApi: ReviewsApi? = null,
 ) : StandRepository {
 
-    override fun getStandsStream(): Flow<List<Cantina>> =
-        dao.getAllCantine().map { entities ->
-            entities.map { it.toDomain() }
+    companion object {
+        const val DEFAULT_EVENT_ID = "11111111-1111-1111-1111-000000002026"
+    }
+
+    private val editionCache = MutableStateFlow<Map<String, List<Cantina>>>(emptyMap())
+
+    private fun isDefaultEvent(eventId: String?): Boolean =
+        eventId.isNullOrBlank() || eventId == DEFAULT_EVENT_ID
+
+    private fun parseEventUuid(eventId: String?): UUID? =
+        eventId?.takeIf { it.isNotBlank() }?.let { runCatching { UUID.fromString(it) }.getOrNull() }
+
+    override fun getStandsStream(eventId: String?): Flow<List<Cantina>> {
+        if (isDefaultEvent(eventId)) {
+            return dao.getAllCantine().map { entities ->
+                entities.map { it.toDomain() }
+            }
         }
+        val key = eventId!!.trim()
+        return editionCache.map { map -> map[key] ?: emptyList() }
+    }
 
-    override suspend fun refreshStands(): NetworkResult<Unit> {
-        val result = safeApiCall { api.listStands() }
+    override suspend fun refreshStands(eventId: String?): NetworkResult<Unit> {
+        val eventUuid = parseEventUuid(eventId)
+        val result = safeApiCall { api.listStands(eventId = eventUuid) }
         if (result is NetworkResult.Success) {
-            val entities = result.data.map { it.toDomain().toEntity() }
-            dao.insertCantine(entities)
+            if (isDefaultEvent(eventId)) {
+                val entities = result.data.map { it.toDomain().toEntity() }
+                dao.insertCantine(entities)
+            }
 
+            val detailedCantine = mutableListOf<Cantina>()
             coroutineScope {
                 result.data.map { summary ->
-                    async { safeApiCall { api.getStand(summary.id) } }
-                }.awaitAll().forEach { detailResult ->
+                    async { safeApiCall { api.getStand(id = summary.id, eventId = eventUuid) } }
+                }.awaitAll().forEachIndexed { idx, detailResult ->
                     if (detailResult is NetworkResult.Success) {
-                        saveFullCantina(detailResult.data.toDomain())
+                        val full = detailResult.data.toDomain()
+                        detailedCantine.add(full)
+                        if (isDefaultEvent(eventId)) {
+                            saveFullCantina(full)
+                        }
+                    } else {
+                        detailedCantine.add(result.data[idx].toDomain())
                     }
                 }
+            }
+            if (!isDefaultEvent(eventId)) {
+                val key = eventId!!.trim()
+                editionCache.value = editionCache.value + (key to detailedCantine.sortedBy { it.number })
             }
         }
         return result.map { }
     }
 
-    override suspend fun getStand(id: String): NetworkResult<Cantina> {
+    override suspend fun getStand(id: String, eventId: String?): NetworkResult<Cantina> {
         val uuid = runCatching { UUID.fromString(id) }.getOrElse {
             return NetworkResult.Error.Unknown(throwable = it, message = "ID non valido")
         }
-        val result = safeApiCall { api.getStand(uuid) }
+        val eventUuid = parseEventUuid(eventId)
+        val result = safeApiCall { api.getStand(id = uuid, eventId = eventUuid) }
         if (result is NetworkResult.Success) {
             val cantina = result.data.toDomain()
-            saveFullCantina(cantina)
+            if (isDefaultEvent(eventId)) {
+                saveFullCantina(cantina)
+            } else {
+                val key = eventId!!.trim()
+                val current = editionCache.value[key].orEmpty().filterNot { it.id == cantina.id }
+                editionCache.value = editionCache.value + (key to (current + cantina).sortedBy { it.number })
+            }
         }
         return result.map { it.toDomain() }
     }
 
-    override fun getStandStream(id: String): Flow<Cantina?> = flow {
-        val entity = dao.getCantinaById(id)
-        emit(entity?.toDomain())
+    override fun getStandStream(id: String, eventId: String?): Flow<Cantina?> {
+        if (isDefaultEvent(eventId)) {
+            return flow {
+                val entity = dao.getCantinaById(id)
+                emit(entity?.toDomain())
+            }
+        }
+        val key = eventId!!.trim()
+        return editionCache.map { map ->
+            map[key]?.firstOrNull { it.id == id }
+        }
     }
 
     override suspend fun searchStands(
         query: String,
         kind: MenuKind?,
         onlyAvailable: Boolean,
+        eventId: String?,
     ): NetworkResult<List<CantinaSearchResult>> {
+        val eventUuid = parseEventUuid(eventId)
         val result = safeApiCall {
             api.searchStands(
                 q = query,
                 kind = kind?.toDto(),
                 onlyAvailable = onlyAvailable,
+                eventId = eventUuid,
             )
         }
         return result.map { list ->

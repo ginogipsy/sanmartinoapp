@@ -1,7 +1,10 @@
 package com.ginogipsy.sanmartinoapp.ui.screens.cantine
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import com.ginogipsy.sanmartinoapp.data.model.StandInteractionType
 import com.ginogipsy.sanmartinoapp.data.repository.AuthRepository
 import com.ginogipsy.sanmartinoapp.data.repository.FavoritesRepository
@@ -9,6 +12,7 @@ import com.ginogipsy.sanmartinoapp.data.repository.StandRepository
 import com.ginogipsy.sanmartinoapp.data.search.CantinaSearchResult
 import com.ginogipsy.sanmartinoapp.data.search.searchCantine
 import com.ginogipsy.sanmartinoapp.network.NetworkResult
+import com.ginogipsy.sanmartinoapp.ui.sanMartinoApplication
 import com.ginogipsy.sanmartinoapp.ui.state.UiState
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
@@ -29,6 +33,7 @@ class CantineViewModel(
     private val standRepository: StandRepository,
     private val favoritesRepository: FavoritesRepository? = null,
     private val authRepository: AuthRepository? = null,
+    private val eventId: String? = null,
 ) : ViewModel() {
 
     private val _query = MutableStateFlow("")
@@ -49,7 +54,7 @@ class CantineViewModel(
                 if (trimmed.isEmpty()) {
                     emit(null)
                 } else {
-                    when (val res = standRepository.searchStands(trimmed)) {
+                    when (val res = standRepository.searchStands(query = trimmed, eventId = eventId)) {
                         is NetworkResult.Success -> emit(res.data)
                         else -> emit(null)
                     }
@@ -59,7 +64,7 @@ class CantineViewModel(
 
     val results: StateFlow<UiState<List<CantinaSearchResult>>> =
         combine(
-            standRepository.getStandsStream(),
+            standRepository.getStandsStream(eventId),
             _query,
             remoteSearchResults,
             _onlyFavorites,
@@ -103,7 +108,7 @@ class CantineViewModel(
 
     fun refresh() {
         viewModelScope.launch {
-            standRepository.refreshStands()
+            standRepository.refreshStands(eventId)
             favoritesRepository?.syncWithRemote()
         }
     }
@@ -139,5 +144,20 @@ class CantineViewModel(
                 searchQuery = currentQuery,
             )
         }
+    }
+
+    companion object {
+        fun factory(eventId: String? = null): ViewModelProvider.Factory =
+            viewModelFactory {
+                initializer {
+                    val container = sanMartinoApplication().container
+                    CantineViewModel(
+                        standRepository = container.standRepository,
+                        favoritesRepository = container.favoritesRepository,
+                        authRepository = container.authRepository,
+                        eventId = eventId,
+                    )
+                }
+            }
     }
 }

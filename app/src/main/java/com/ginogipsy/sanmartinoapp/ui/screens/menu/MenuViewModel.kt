@@ -27,10 +27,11 @@ class MenuViewModel(
     private val cantinaId: String,
     val kind: MenuKind,
     private val standRepository: StandRepository,
+    private val eventId: String? = null,
 ) : ViewModel() {
 
     val uiState: StateFlow<UiState<MenuData>> =
-        standRepository.getStandStream(cantinaId)
+        standRepository.getStandStream(cantinaId, eventId)
             .map { cantina ->
                 if (cantina == null) UiState.Loading
                 else {
@@ -52,7 +53,7 @@ class MenuViewModel(
 
     fun refresh() {
         viewModelScope.launch {
-            standRepository.getStand(cantinaId)
+            standRepository.getStand(cantinaId, eventId)
         }
     }
 
@@ -67,13 +68,18 @@ class MenuViewModel(
     }
 
     companion object {
-        fun factory(cantinaId: String, kind: MenuKind): ViewModelProvider.Factory =
+        fun factory(
+            cantinaId: String,
+            kind: MenuKind,
+            eventId: String? = null,
+        ): ViewModelProvider.Factory =
             viewModelFactory {
                 initializer {
                     MenuViewModel(
                         cantinaId = cantinaId,
                         kind = kind,
                         standRepository = sanMartinoApplication().container.standRepository,
+                        eventId = eventId,
                     )
                 }
             }

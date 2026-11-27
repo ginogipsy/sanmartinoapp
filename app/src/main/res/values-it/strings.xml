@@ -67,4 +67,9 @@
     <string name="reviews_comment_label">Il tuo commento (opzionale)</string>
     <string name="reviews_action_submit">Invia recensione</string>
     <string name="reviews_submitted_pending">Recensione inviata! Sarà visibile dopo l\'approvazione del moderatore.</string>
+    <string name="action_open_cantine_readonly">Esplora edizione (Sola lettura)</string>
+    <string name="archive_readonly_banner_title">Archivio Storico — Sola Lettura</string>
+    <string name="archive_readonly_banner_subtitle">Stai consultando un\'edizione conclusa: cantine, menu storici e recensioni sono in sola lettura.</string>
+    <string name="reviews_readonly_notice">Edizione conclusa — consultazione recensioni storiche in sola lettura.</string>
+    <string name="menu_historical_recipe">Proposta storica dell\'edizione</string>
 </resources>

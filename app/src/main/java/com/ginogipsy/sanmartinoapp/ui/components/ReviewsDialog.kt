@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material3.AlertDialog
@@ -59,6 +60,7 @@ fun ReviewsDialog(
     targetId: String,
     targetTitle: String,
     standId: String? = null,
+    readOnly: Boolean = false,
     onDismiss: () -> Unit,
 ) {
     val context = LocalContext.current
@@ -140,7 +142,7 @@ fun ReviewsDialog(
                             .padding(vertical = 12.dp),
                         horizontalArrangement = Arrangement.Center,
                     ) {
-                        CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                        CircularProgressIndicator(modifier = Modifier.size(28.dp))
                     }
                 } else if (reviews.isEmpty()) {
                     Text(
@@ -152,18 +154,42 @@ fun ReviewsDialog(
                     LazyColumn(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .heightIn(max = 210.dp),
+                            .heightIn(max = 220.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         items(reviews, key = { it.id }) { rev ->
-                            ReviewItemCard(review = rev)
+                            ReviewItemCard(rev)
                         }
                     }
                 }
 
                 HorizontalDivider()
 
-                if (currentUser == null) {
+                if (readOnly) {
+                    Surface(
+                        color = MaterialTheme.colorScheme.secondaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                        shape = MaterialTheme.shapes.small,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.History,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp),
+                            )
+                            Text(
+                                text = stringResource(R.string.reviews_readonly_notice),
+                                style = MaterialTheme.typography.bodySmall,
+                                fontWeight = FontWeight.Medium,
+                            )
+                        }
+                    }
+                } else if (currentUser == null) {
                     Column(
                         modifier = Modifier.fillMaxWidth(),
                         verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -248,7 +274,7 @@ fun ReviewsDialog(
             }
         },
         confirmButton = {
-            if (currentUser != null) {
+            if (!readOnly && currentUser != null) {
                 val submittedMessage = stringResource(R.string.reviews_submitted_pending)
                 Button(
                     enabled = !isSubmitting && comment.trim().length >= 2,

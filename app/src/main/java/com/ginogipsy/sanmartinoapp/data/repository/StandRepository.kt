@@ -11,26 +11,27 @@ import com.ginogipsy.sanmartinoapp.network.NetworkResult
 import kotlinx.coroutines.flow.Flow
 
 interface StandRepository {
-    /** Stream delle cantine (con menu locale se disponibile). */
-    fun getStandsStream(): Flow<List<Cantina>>
+    /** Stream delle cantine (filtrato per edizione se specificato). */
+    fun getStandsStream(eventId: String? = null): Flow<List<Cantina>>
 
-    /** Forza il refresh delle cantine dal backend. */
-    suspend fun refreshStands(): NetworkResult<Unit>
+    /** Forza il refresh delle cantine dal backend per l'edizione selezionata. */
+    suspend fun refreshStands(eventId: String? = null): NetworkResult<Unit>
 
-    /** Dettaglio singola cantina, comprensivo di menu (food + drinks). */
-    suspend fun getStand(id: String): NetworkResult<Cantina>
+    /** Dettaglio singola cantina, comprensivo di menu (food + drinks) dell'edizione selezionata. */
+    suspend fun getStand(id: String, eventId: String? = null): NetworkResult<Cantina>
 
-    /** Stream del dettaglio di una cantina. */
-    fun getStandStream(id: String): Flow<Cantina?>
+    /** Stream del dettaglio di una cantina per l'edizione selezionata. */
+    fun getStandStream(id: String, eventId: String? = null): Flow<Cantina?>
 
     /**
      * Ricerca intelligente server-side su `/v1/stands/search` per nome piatto,
-     * parole chiave (`keywords`) e descrizione.
+     * parole chiave (`keywords`) e descrizione, filtrata per edizione (`eventId`).
      */
     suspend fun searchStands(
         query: String,
         kind: MenuKind? = null,
         onlyAvailable: Boolean = false,
+        eventId: String? = null,
     ): NetworkResult<List<CantinaSearchResult>>
 
     /**
