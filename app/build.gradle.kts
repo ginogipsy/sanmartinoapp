@@ -164,7 +164,7 @@ val openApiGenerateStands = tasks.register<GenerateTask>("openApiGenerateStands"
 }
 
 tasks.named("preBuild") {
-    dependsOn(openApiGenerateEvents, openApiGenerateStands)
+    dependsOn(openApiGenerateEvents, openApiGenerateStands, "adbReverse")
 }
 
 dependencies {
@@ -208,6 +208,7 @@ dependencies {
 tasks.register<Exec>("adbReverse") {
     group = "development"
     description = "Configura 'adb reverse tcp:8080 tcp:8080' per bypassare le limitazioni di 10.0.2.2 su API 36+."
-    commandLine("adb", "reverse", "tcp:8080", "tcp:8080")
+    val adbBin = androidComponents.sdkComponents.adb.get().asFile.absolutePath
+    commandLine(adbBin, "reverse", "tcp:8080", "tcp:8080")
     isIgnoreExitValue = true
 }

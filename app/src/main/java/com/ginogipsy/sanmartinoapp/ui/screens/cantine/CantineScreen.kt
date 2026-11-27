@@ -16,15 +16,21 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.LocalBar
 import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.Place
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -41,9 +47,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.pluralStringResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
@@ -53,36 +58,61 @@ import com.ginogipsy.sanmartinoapp.R
 import com.ginogipsy.sanmartinoapp.data.model.Cantina
 import com.ginogipsy.sanmartinoapp.data.model.Language
 import com.ginogipsy.sanmartinoapp.data.model.MenuKind
+import com.ginogipsy.sanmartinoapp.data.model.ReviewTargetType
+import com.ginogipsy.sanmartinoapp.data.model.StandInteractionType
 import com.ginogipsy.sanmartinoapp.data.search.CantinaSearchResult
 import com.ginogipsy.sanmartinoapp.i18n.LocalLanguage
-import com.ginogipsy.sanmartinoapp.ui.AppViewModelProvider
+import androidx.compose.ui.res.pluralStringResource
+import com.ginogipsy.sanmartinoapp.i18n.localizedStringResource as stringResource
+import com.ginogipsy.sanmartinoapp.ui.components.AccountTopBarAction
 import com.ginogipsy.sanmartinoapp.ui.components.BilingualDescriptionDialog
 import com.ginogipsy.sanmartinoapp.ui.components.CantinaNumberBadge
 import com.ginogipsy.sanmartinoapp.ui.components.ErrorState
 import com.ginogipsy.sanmartinoapp.ui.components.LanguageToggle
 import com.ginogipsy.sanmartinoapp.ui.components.LoadingState
+import com.ginogipsy.sanmartinoapp.ui.components.ReviewsDialog
 import com.ginogipsy.sanmartinoapp.ui.state.UiState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CantineScreen(
+    eventId: String = "11111111-1111-1111-1111-000000002026",
+    eventName: String = "",
+    readOnly: Boolean = false,
     onBack: () -> Unit,
     onOpenMenu: (cantinaId: String, kind: MenuKind) -> Unit,
-    viewModel: CantineViewModel = viewModel(factory = AppViewModelProvider.Factory),
+    viewModel: CantineViewModel = viewModel(
+        key = "cantine-$eventId",
+        factory = CantineViewModel.factory(eventId),
+    ),
 ) {
     val context = LocalContext.current
     val resultsState by viewModel.results.collectAsStateWithLifecycle()
     val query by viewModel.query.collectAsStateWithLifecycle()
+    val onlyFavorites by viewModel.onlyFavorites.collectAsStateWithLifecycle()
+    val favoriteStandIds by viewModel.favoriteStandIds.collectAsStateWithLifecycle()
     var dialogCantina by remember { mutableStateOf<Cantina?>(null) }
+    var reviewsCantina by remember { mutableStateOf<Cantina?>(null) }
 
     Scaffold(
-        containerColor = androidx.compose.ui.graphics.Color.Transparent,
+        containerColor = Color.Transparent,
         topBar = {
             TopAppBar(
                 colors = androidx.compose.material3.TopAppBarDefaults.topAppBarColors(
-                    containerColor = androidx.compose.ui.graphics.Color.Transparent,
+                    containerColor = Color.Transparent,
                 ),
-                title = { com.ginogipsy.sanmartinoapp.ui.components.BrandTitle(stringResource(R.string.cantine_title)) },
+                title = {
+                    Column {
+                        com.ginogipsy.sanmartinoapp.ui.components.BrandTitle(stringResource(R.string.cantine_title))
+                        if (eventName.isNotBlank()) {
+                            Text(
+                                text = eventName,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color.White,
+                            )
+                        }
+                    }
+                },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
@@ -91,7 +121,10 @@ fun CantineScreen(
                         )
                     }
                 },
-                actions = { LanguageToggle() },
+                actions = {
+                    AccountTopBarAction()
+                    LanguageToggle()
+                },
             )
         },
     ) { padding ->
@@ -100,14 +133,63 @@ fun CantineScreen(
                 .fillMaxSize()
                 .padding(padding),
         ) {
+            if (readOnly) {
+                HistoricalReadOnlyBanner(
+                    eventName = eventName,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 6.dp),
+                )
+            }
+
             SearchField(
                 query = query,
                 onQueryChange = viewModel::onQueryChange,
                 onClear = viewModel::clearQuery,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
             )
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+                    .padding(bottom = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                FilterChip(
+                    selected = !onlyFavorites,
+                    onClick = { viewModel.setOnlyFavorites(false) },
+                    label = { Text(stringResource(R.string.favorites_filter_all)) },
+                    colors = FilterChipDefaults.filterChipColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.9f),
+                        labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    ),
+                )
+                FilterChip(
+                    selected = onlyFavorites,
+                    onClick = { viewModel.toggleOnlyFavorites() },
+                    label = {
+                        Text(
+                            stringResource(
+                                R.string.favorites_filter_only,
+                                favoriteStandIds.size,
+                            )
+                        )
+                    },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = if (onlyFavorites) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
+                            contentDescription = null,
+                        )
+                    },
+                    colors = FilterChipDefaults.filterChipColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.9f),
+                        labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    ),
+                )
+            }
 
             when (val state = resultsState) {
                 is UiState.Loading -> LoadingState(modifier = Modifier.fillMaxSize())
@@ -126,14 +208,17 @@ fun CantineScreen(
                             Surface(
                                 shape = MaterialTheme.shapes.medium,
                                 color = MaterialTheme.colorScheme.surfaceVariant,
-                                contentColor = androidx.compose.ui.graphics.Color.Black,
+                                contentColor = Color.Black,
                                 shadowElevation = 2.dp,
                                 modifier = Modifier.padding(24.dp),
                             ) {
                                 Text(
-                                    text = stringResource(R.string.search_no_results),
+                                    text = if (onlyFavorites && query.isBlank())
+                                        stringResource(R.string.favorites_empty)
+                                    else
+                                        stringResource(R.string.search_no_results),
                                     style = MaterialTheme.typography.bodyMedium,
-                                    color = androidx.compose.ui.graphics.Color.Black,
+                                    color = Color.Black,
                                     modifier = Modifier.padding(horizontal = 20.dp, vertical = 14.dp),
                                 )
                             }
@@ -150,10 +235,42 @@ fun CantineScreen(
                                 CantinaCard(
                                     result = result,
                                     showMatchCount = query.isNotBlank(),
-                                    onDescription = { dialogCantina = result.cantina },
-                                    onFood = { onOpenMenu(result.cantina.id, MenuKind.FOOD) },
-                                    onDrinks = { onOpenMenu(result.cantina.id, MenuKind.DRINK) },
-                                    onLocation = { openMaps(context, result.cantina) },
+                                    readOnly = readOnly,
+                                    isFavorite = favoriteStandIds.contains(result.cantina.id),
+                                    onToggleFavorite = {
+                                        viewModel.toggleFavorite(result.cantina.id)
+                                    },
+                                    onDescription = {
+                                        viewModel.recordStandInteraction(
+                                            result.cantina.id,
+                                            StandInteractionType.STAND_DESCRIPTION_OPEN,
+                                        )
+                                        dialogCantina = result.cantina
+                                    },
+                                    onFood = {
+                                        viewModel.recordStandInteraction(
+                                            result.cantina.id,
+                                            StandInteractionType.STAND_FOOD_OPEN,
+                                        )
+                                        onOpenMenu(result.cantina.id, MenuKind.FOOD)
+                                    },
+                                    onDrinks = {
+                                        viewModel.recordStandInteraction(
+                                            result.cantina.id,
+                                            StandInteractionType.STAND_DRINK_OPEN,
+                                        )
+                                        onOpenMenu(result.cantina.id, MenuKind.DRINK)
+                                    },
+                                    onLocation = {
+                                        viewModel.recordStandInteraction(
+                                            result.cantina.id,
+                                            StandInteractionType.STAND_MAP_OPEN,
+                                        )
+                                        openMaps(context, result.cantina)
+                                    },
+                                    onReviews = {
+                                        reviewsCantina = result.cantina
+                                    },
                                 )
                             }
                         }
@@ -179,6 +296,56 @@ fun CantineScreen(
                 )
             },
         )
+    }
+
+    reviewsCantina?.let { cantina ->
+        ReviewsDialog(
+            targetType = ReviewTargetType.STAND,
+            targetId = cantina.id,
+            standId = cantina.id,
+            targetTitle = "${cantina.number} — ${cantina.name}",
+            readOnly = readOnly,
+            onDismiss = { reviewsCantina = null },
+        )
+    }
+}
+
+@Composable
+internal fun HistoricalReadOnlyBanner(
+    eventName: String,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        color = MaterialTheme.colorScheme.secondaryContainer,
+        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+        shape = MaterialTheme.shapes.medium,
+        shadowElevation = 2.dp,
+        modifier = modifier,
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Icon(
+                imageVector = Icons.Filled.History,
+                contentDescription = null,
+            )
+            Column {
+                Text(
+                    text = if (eventName.isNotBlank())
+                        "${stringResource(R.string.archive_readonly_banner_title)} • $eventName"
+                    else
+                        stringResource(R.string.archive_readonly_banner_title),
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold,
+                )
+                Text(
+                    text = stringResource(R.string.archive_readonly_banner_subtitle),
+                    style = MaterialTheme.typography.bodySmall,
+                )
+            }
+        }
     }
 }
 
@@ -211,16 +378,18 @@ private fun SearchField(
         singleLine = true,
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
         colors = OutlinedTextFieldDefaults.colors(
-            focusedContainerColor = androidx.compose.ui.graphics.Color.White,
-            unfocusedContainerColor = androidx.compose.ui.graphics.Color.White,
-            focusedTextColor = MaterialTheme.colorScheme.onSurface,
-            unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
-            focusedPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant,
-            unfocusedPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant,
-            focusedLeadingIconColor = MaterialTheme.colorScheme.onSurface,
-            unfocusedLeadingIconColor = MaterialTheme.colorScheme.onSurface,
-            focusedTrailingIconColor = MaterialTheme.colorScheme.onSurface,
-            unfocusedTrailingIconColor = MaterialTheme.colorScheme.onSurface,
+            focusedContainerColor = Color.White,
+            unfocusedContainerColor = Color.White,
+            disabledContainerColor = Color.White,
+            focusedTextColor = Color.Black,
+            unfocusedTextColor = Color.Black,
+            focusedPlaceholderColor = Color.DarkGray,
+            unfocusedPlaceholderColor = Color.DarkGray,
+            focusedLeadingIconColor = Color.Black,
+            unfocusedLeadingIconColor = Color.DarkGray,
+            focusedTrailingIconColor = Color.Black,
+            unfocusedTrailingIconColor = Color.DarkGray,
+            cursorColor = Color.Black,
         ),
     )
 }
@@ -229,15 +398,18 @@ private fun SearchField(
 private fun CantinaCard(
     result: CantinaSearchResult,
     showMatchCount: Boolean,
+    readOnly: Boolean,
+    isFavorite: Boolean,
+    onToggleFavorite: () -> Unit,
     onDescription: () -> Unit,
     onFood: () -> Unit,
     onDrinks: () -> Unit,
     onLocation: () -> Unit,
+    onReviews: () -> Unit,
 ) {
     val cantina = result.cantina
-    val lang by LocalLanguage.current
+    val lang = LocalLanguage.current.value
     val descriptionText = cantina.description.pick(lang)
-
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
@@ -261,6 +433,51 @@ private fun CantinaCard(
                             modifier = Modifier.padding(top = 4.dp),
                         )
                     }
+                    if (!readOnly && (cantina.activeOrdersCount > 0 || cantina.currentServingOrderNumber > 0)) {
+                        val queueText = if (lang == Language.EN) {
+                            buildString {
+                                if (cantina.currentServingOrderNumber > 0) {
+                                    append("Serving #${cantina.currentServingOrderNumber.toString().padStart(4, '0')}")
+                                }
+                                if (cantina.activeOrdersCount > 0) {
+                                    if (isNotEmpty()) append(" • ")
+                                    append("Queue: ${cantina.activeOrdersCount} (~${cantina.estimatedWaitMinutes} min)")
+                                }
+                            }
+                        } else {
+                            buildString {
+                                if (cantina.currentServingOrderNumber > 0) {
+                                    append("In uscita #${cantina.currentServingOrderNumber.toString().padStart(4, '0')}")
+                                }
+                                if (cantina.activeOrdersCount > 0) {
+                                    if (isNotEmpty()) append(" • ")
+                                    append("In coda: ${cantina.activeOrdersCount} (~${cantina.estimatedWaitMinutes} min)")
+                                }
+                            }
+                        }
+                        Surface(
+                            color = MaterialTheme.colorScheme.secondaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                            shape = MaterialTheme.shapes.small,
+                            modifier = Modifier.padding(top = 4.dp),
+                        ) {
+                            Text(
+                                text = "⚡ $queueText",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.SemiBold,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                            )
+                        }
+                    }
+                }
+                IconButton(onClick = onToggleFavorite) {
+                    Icon(
+                        imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
+                        contentDescription = stringResource(
+                            if (isFavorite) R.string.favorites_remove_cd else R.string.favorites_add_cd
+                        ),
+                        tint = if (isFavorite) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
             }
 
@@ -273,7 +490,7 @@ private fun CantinaCard(
                 )
             }
 
-            val foodsToDisplay = if (cantina.foods.isNotEmpty()) cantina.foods else result.matchingFoods
+            val foodsToDisplay = if (result.matchingFoods.isNotEmpty()) result.matchingFoods else cantina.foods
             if (foodsToDisplay.isNotEmpty()) {
                 val foodNames = foodsToDisplay.joinToString(", ") { item ->
                     val desc = item.description.pick(lang)
@@ -306,6 +523,13 @@ private fun CantinaCard(
                     label = { Text(stringResource(R.string.action_location)) },
                     leadingIcon = {
                         Icon(Icons.Filled.Place, contentDescription = null)
+                    },
+                )
+                AssistChip(
+                    onClick = onReviews,
+                    label = { Text(stringResource(R.string.action_reviews)) },
+                    leadingIcon = {
+                        Icon(Icons.Filled.Star, contentDescription = null)
                     },
                 )
             }

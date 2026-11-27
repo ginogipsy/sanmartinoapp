@@ -4,10 +4,12 @@ import com.ginogipsy.sanmartinoapp.data.model.Cantina
 import com.ginogipsy.sanmartinoapp.data.model.LocalizedText
 import com.ginogipsy.sanmartinoapp.data.model.MenuItem
 import com.ginogipsy.sanmartinoapp.data.model.MenuKind
+import com.ginogipsy.sanmartinoapp.data.search.CantinaSearchResult
 import com.ginogipsy.sanmartinoapp.network.generated.stands.model.LocalizedTextDto
 import com.ginogipsy.sanmartinoapp.network.generated.stands.model.MenuItemDto
 import com.ginogipsy.sanmartinoapp.network.generated.stands.model.MenuKindDto
 import com.ginogipsy.sanmartinoapp.network.generated.stands.model.StandDetailDto
+import com.ginogipsy.sanmartinoapp.network.generated.stands.model.StandSearchResultDto
 import com.ginogipsy.sanmartinoapp.network.generated.stands.model.StandSummaryDto
 
 /**
@@ -29,6 +31,9 @@ fun StandSummaryDto.toDomain(): Cantina = Cantina(
     longitude = longitude,
     foods = emptyList(),
     drinks = emptyList(),
+    activeOrdersCount = activeOrdersCount ?: 0,
+    currentServingOrderNumber = currentServingOrderNumber ?: 0,
+    estimatedWaitMinutes = estimatedWaitMinutes ?: 0,
 )
 
 fun StandDetailDto.toDomain(): Cantina {
@@ -43,6 +48,25 @@ fun StandDetailDto.toDomain(): Cantina {
         longitude = longitude,
         foods = foods.map { it.toDomain() },
         drinks = drinks.map { it.toDomain() },
+        activeOrdersCount = activeOrdersCount ?: 0,
+        currentServingOrderNumber = currentServingOrderNumber ?: 0,
+        estimatedWaitMinutes = estimatedWaitMinutes ?: 0,
+    )
+}
+
+fun StandSearchResultDto.toDomain(cachedCantina: Cantina? = null): CantinaSearchResult {
+    val (matchedFoodsDto, matchedDrinksDto) = matchedItems.partition { it.kind == MenuKindDto.FOOD }
+    val matchingFoods = matchedFoodsDto.map { it.toDomain() }
+    val matchingDrinks = matchedDrinksDto.map { it.toDomain() }
+    val baseCantina = stand.toDomain().copy(
+        foods = cachedCantina?.foods?.takeIf { it.isNotEmpty() } ?: matchingFoods,
+        drinks = cachedCantina?.drinks?.takeIf { it.isNotEmpty() } ?: matchingDrinks,
+    )
+    return CantinaSearchResult(
+        cantina = baseCantina,
+        matchingFoods = matchingFoods,
+        matchingDrinks = matchingDrinks,
+        score = score,
     )
 }
 
@@ -60,5 +84,26 @@ internal fun MenuKindDto.toDomain(): MenuKind = when (this) {
     MenuKindDto.DRINK -> MenuKind.DRINK
 }
 
+internal fun MenuKind.toDto(): MenuKindDto = when (this) {
+    MenuKind.FOOD -> MenuKindDto.FOOD
+    MenuKind.DRINK -> MenuKindDto.DRINK
+}
+
 internal fun LocalizedTextDto.toDomain(): LocalizedText =
     LocalizedText(it = `it`, en = en)
+
+fun com.ginogipsy.sanmartinoapp.network.generated.stands.model.FestivalReviewDto.toDomain():
+    com.ginogipsy.sanmartinoapp.data.model.FestivalReview =
+    com.ginogipsy.sanmartinoapp.data.model.FestivalReview(
+        id = id.toString(),
+        targetType = com.ginogipsy.sanmartinoapp.data.model.ReviewTargetType.valueOf(targetType.name),
+        targetId = targetId.toString(),
+        standId = standId?.toString(),
+        targetName = targetName,
+        authorUserId = authorUserId,
+        authorUsername = authorUsername,
+        rating = rating,
+        comment = comment,
+        status = com.ginogipsy.sanmartinoapp.data.model.ReviewStatus.valueOf(status.name),
+        createdAt = createdAt,
+    )

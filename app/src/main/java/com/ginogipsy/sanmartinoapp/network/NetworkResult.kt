@@ -1,5 +1,6 @@
 package com.ginogipsy.sanmartinoapp.network
 
+import org.json.JSONObject
 import retrofit2.Response
 import java.io.IOException
 
@@ -25,7 +26,7 @@ sealed interface NetworkResult<out T> {
         data class Http(
             val code: Int,
             val body: String?,
-            override val message: String = "Errore HTTP $code",
+            override val message: String = extractServerErrorMessage(body, code),
         ) : Error
 
         /** Tutto il resto: bug, parsing, eccezioni inattese. */
@@ -36,6 +37,17 @@ sealed interface NetworkResult<out T> {
     }
 }
 
+private fun extractServerErrorMessage(body: String?, code: Int): String {
+    if (!body.isNullOrBlank()) {
+        runCatching {
+            val json = JSONObject(body)
+            val msg = json.optString("message").ifBlank { json.optString("error") }
+            if (msg.isNotBlank()) return msg
+        }
+    }
+    return "Errore HTTP $code"
+}
+
 /** Trasforma il payload mantenendo intatto il ramo Error. */
 inline fun <T, R> NetworkResult<T>.map(transform: (T) -> R): NetworkResult<R> = when (this) {
     is NetworkResult.Success -> NetworkResult.Success(transform(data))
@@ -44,10 +56,6 @@ inline fun <T, R> NetworkResult<T>.map(transform: (T) -> R): NetworkResult<R> = 
 
 /**
  * Esegue una chiamata Retrofit `suspend` e la incapsula in un [NetworkResult].
- *
- * Il client generato da OpenAPI Generator ritorna `Response<T>` (non `T` diretto):
- * qui distinguiamo `isSuccessful` + body non-null dal resto e mappiamo le eccezioni
- * piu' comuni.
  */
 suspend fun <T> safeApiCall(call: suspend () -> Response<T>): NetworkResult<T> {
     return try {
@@ -56,6 +64,9 @@ suspend fun <T> safeApiCall(call: suspend () -> Response<T>): NetworkResult<T> {
             val body = response.body()
             if (body != null) {
                 NetworkResult.Success(body)
+            } else if (response.code() == 204 || response.code() == 205) {
+                @Suppress("UNCHECKED_CAST")
+                NetworkResult.Success(Unit as T)
             } else {
                 NetworkResult.Error.Http(
                     code = response.code(),
@@ -64,9 +75,11 @@ suspend fun <T> safeApiCall(call: suspend () -> Response<T>): NetworkResult<T> {
                 )
             }
         } else {
+            val errorBody = runCatching { response.errorBody()?.string() }.getOrNull()
             NetworkResult.Error.Http(
                 code = response.code(),
-                body = runCatching { response.errorBody()?.string() }.getOrNull(),
+                body = errorBody,
+                message = extractServerErrorMessage(errorBody, response.code()),
             )
         }
     } catch (e: IOException) {

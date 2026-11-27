@@ -8,6 +8,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.ginogipsy.sanmartinoapp.data.model.Cantina
 import com.ginogipsy.sanmartinoapp.data.model.MenuItem
 import com.ginogipsy.sanmartinoapp.data.model.MenuKind
+import com.ginogipsy.sanmartinoapp.data.model.StandInteractionType
 import com.ginogipsy.sanmartinoapp.data.repository.StandRepository
 import com.ginogipsy.sanmartinoapp.ui.sanMartinoApplication
 import com.ginogipsy.sanmartinoapp.ui.state.UiState
@@ -26,10 +27,11 @@ class MenuViewModel(
     private val cantinaId: String,
     val kind: MenuKind,
     private val standRepository: StandRepository,
+    private val eventId: String? = null,
 ) : ViewModel() {
 
     val uiState: StateFlow<UiState<MenuData>> =
-        standRepository.getStandStream(cantinaId)
+        standRepository.getStandStream(cantinaId, eventId)
             .map { cantina ->
                 if (cantina == null) UiState.Loading
                 else {
@@ -51,18 +53,33 @@ class MenuViewModel(
 
     fun refresh() {
         viewModelScope.launch {
-            standRepository.getStand(cantinaId)
+            standRepository.getStand(cantinaId, eventId)
+        }
+    }
+
+    fun onMenuItemClicked(item: MenuItem) {
+        viewModelScope.launch {
+            standRepository.recordInteraction(
+                standId = cantinaId,
+                interactionType = StandInteractionType.MENU_ITEM_CLICK,
+                menuItemId = item.id,
+            )
         }
     }
 
     companion object {
-        fun factory(cantinaId: String, kind: MenuKind): ViewModelProvider.Factory =
+        fun factory(
+            cantinaId: String,
+            kind: MenuKind,
+            eventId: String? = null,
+        ): ViewModelProvider.Factory =
             viewModelFactory {
                 initializer {
                     MenuViewModel(
                         cantinaId = cantinaId,
                         kind = kind,
                         standRepository = sanMartinoApplication().container.standRepository,
+                        eventId = eventId,
                     )
                 }
             }

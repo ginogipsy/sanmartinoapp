@@ -9,11 +9,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Storefront
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -26,18 +29,21 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ginogipsy.sanmartinoapp.R
 import com.ginogipsy.sanmartinoapp.data.model.Event
+import com.ginogipsy.sanmartinoapp.data.model.ReviewTargetType
+import com.ginogipsy.sanmartinoapp.i18n.localizedStringResource as stringResource
 import com.ginogipsy.sanmartinoapp.ui.AppViewModelProvider
+import com.ginogipsy.sanmartinoapp.ui.components.AccountTopBarAction
 import com.ginogipsy.sanmartinoapp.ui.components.BilingualDescriptionDialog
 import com.ginogipsy.sanmartinoapp.ui.components.ErrorState
 import com.ginogipsy.sanmartinoapp.ui.components.LanguageToggle
 import com.ginogipsy.sanmartinoapp.ui.components.LoadingState
+import com.ginogipsy.sanmartinoapp.ui.components.ReviewsDialog
 import com.ginogipsy.sanmartinoapp.ui.state.UiState
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -45,11 +51,12 @@ import java.util.Locale
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EventsScreen(
-    onOpenCantine: () -> Unit,
+    onOpenCantine: (eventId: String, eventName: String, readOnly: Boolean) -> Unit,
     viewModel: EventsViewModel = viewModel(factory = AppViewModelProvider.Factory),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var dialogEvent by remember { mutableStateOf<Event?>(null) }
+    var reviewsEvent by remember { mutableStateOf<Event?>(null) }
 
     Scaffold(
         containerColor = androidx.compose.ui.graphics.Color.Transparent,
@@ -59,7 +66,10 @@ fun EventsScreen(
                     containerColor = androidx.compose.ui.graphics.Color.Transparent,
                 ),
                 title = { com.ginogipsy.sanmartinoapp.ui.components.BrandTitle(stringResource(R.string.events_title)) },
-                actions = { LanguageToggle() },
+                actions = {
+                    AccountTopBarAction()
+                    LanguageToggle()
+                },
             )
         },
     ) { padding ->
@@ -79,6 +89,7 @@ fun EventsScreen(
             is UiState.Success -> EventsList(
                 data = state.data,
                 onDescription = { dialogEvent = it },
+                onReviews = { reviewsEvent = it },
                 onOpenCantine = onOpenCantine,
                 modifier = Modifier
                     .fillMaxSize()
@@ -94,13 +105,24 @@ fun EventsScreen(
             onDismiss = { dialogEvent = null },
         )
     }
+
+    reviewsEvent?.let { event ->
+        ReviewsDialog(
+            targetType = ReviewTargetType.EVENT,
+            targetId = event.id,
+            targetTitle = event.name,
+            readOnly = !event.isUpcoming(),
+            onDismiss = { reviewsEvent = null },
+        )
+    }
 }
 
 @Composable
 private fun EventsList(
     data: EventsData,
     onDescription: (Event) -> Unit,
-    onOpenCantine: () -> Unit,
+    onReviews: (Event) -> Unit,
+    onOpenCantine: (eventId: String, eventName: String, readOnly: Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     LazyColumn(
@@ -113,9 +135,10 @@ private fun EventsList(
             items(data.upcoming, key = { it.id }) { event ->
                 EventCard(
                     event = event,
-                    showCantineButton = true,
+                    isPastEdition = false,
                     onDescription = { onDescription(event) },
-                    onOpenCantine = onOpenCantine,
+                    onReviews = { onReviews(event) },
+                    onOpenCantine = { onOpenCantine(event.id, event.name, false) },
                 )
             }
         }
@@ -124,9 +147,10 @@ private fun EventsList(
             items(data.past, key = { it.id }) { event ->
                 EventCard(
                     event = event,
-                    showCantineButton = false,
+                    isPastEdition = true,
                     onDescription = { onDescription(event) },
-                    onOpenCantine = onOpenCantine,
+                    onReviews = { onReviews(event) },
+                    onOpenCantine = { onOpenCantine(event.id, event.name, true) },
                 )
             }
         }
@@ -155,8 +179,9 @@ private fun SectionHeader(text: String) {
 @Composable
 private fun EventCard(
     event: Event,
-    showCantineButton: Boolean,
+    isPastEdition: Boolean,
     onDescription: () -> Unit,
+    onReviews: () -> Unit,
     onOpenCantine: () -> Unit,
 ) {
     Card(
@@ -191,15 +216,38 @@ private fun EventCard(
                 OutlinedButton(onClick = onDescription) {
                     Text(stringResource(R.string.action_description))
                 }
-                if (showCantineButton) {
-                    Button(onClick = onOpenCantine) {
-                        Icon(
-                            imageVector = Icons.Filled.Storefront,
-                            contentDescription = null,
-                            modifier = Modifier.padding(end = 6.dp),
-                        )
-                        Text(stringResource(R.string.action_open_cantine))
-                    }
+                OutlinedButton(onClick = onReviews) {
+                    Icon(
+                        imageVector = Icons.Filled.Star,
+                        contentDescription = null,
+                        modifier = Modifier.padding(end = 4.dp),
+                    )
+                    Text(stringResource(R.string.action_reviews))
+                }
+            }
+            if (isPastEdition) {
+                FilledTonalButton(
+                    onClick = onOpenCantine,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.History,
+                        contentDescription = null,
+                        modifier = Modifier.padding(end = 6.dp),
+                    )
+                    Text(stringResource(R.string.action_open_cantine_readonly))
+                }
+            } else {
+                Button(
+                    onClick = onOpenCantine,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Storefront,
+                        contentDescription = null,
+                        modifier = Modifier.padding(end = 6.dp),
+                    )
+                    Text(stringResource(R.string.action_open_cantine))
                 }
             }
         }
