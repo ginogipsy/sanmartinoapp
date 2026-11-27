@@ -29,7 +29,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -40,12 +39,14 @@ import com.ginogipsy.sanmartinoapp.data.model.MenuItem
 import com.ginogipsy.sanmartinoapp.data.model.MenuKind
 import com.ginogipsy.sanmartinoapp.data.model.ReviewTargetType
 import com.ginogipsy.sanmartinoapp.i18n.LocalLanguage
+import com.ginogipsy.sanmartinoapp.i18n.localizedStringResource as stringResource
 import com.ginogipsy.sanmartinoapp.ui.components.AccountTopBarAction
 import com.ginogipsy.sanmartinoapp.ui.components.BilingualDescriptionDialog
 import com.ginogipsy.sanmartinoapp.ui.components.ErrorState
 import com.ginogipsy.sanmartinoapp.ui.components.LanguageToggle
 import com.ginogipsy.sanmartinoapp.ui.components.LoadingState
 import com.ginogipsy.sanmartinoapp.ui.components.ReviewsDialog
+import com.ginogipsy.sanmartinoapp.ui.screens.cantine.HistoricalReadOnlyBanner
 import com.ginogipsy.sanmartinoapp.ui.state.UiState
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -53,11 +54,14 @@ import com.ginogipsy.sanmartinoapp.ui.state.UiState
 fun MenuScreen(
     cantinaId: String,
     kind: MenuKind,
+    eventId: String = "11111111-1111-1111-1111-000000002026",
+    eventName: String = "",
+    readOnly: Boolean = false,
     onBack: () -> Unit,
 ) {
     val viewModel: MenuViewModel = viewModel(
-        key = "menu-$cantinaId-${kind.name}",
-        factory = MenuViewModel.factory(cantinaId, kind),
+        key = "menu-$cantinaId-${kind.name}-$eventId",
+        factory = MenuViewModel.factory(cantinaId, kind, eventId),
     )
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var dialogItem by remember { mutableStateOf<MenuItem?>(null) }
@@ -78,9 +82,13 @@ fun MenuScreen(
                 title = {
                     Column {
                         com.ginogipsy.sanmartinoapp.ui.components.BrandTitle(stringResource(titleRes))
-                        if (cantinaTitle.isNotBlank()) {
+                        val subtitle = listOfNotNull(
+                            cantinaTitle.takeIf { it.isNotBlank() },
+                            eventName.takeIf { it.isNotBlank() },
+                        ).joinToString(" • ")
+                        if (subtitle.isNotBlank()) {
                             Text(
-                                text = cantinaTitle,
+                                text = subtitle,
                                 style = MaterialTheme.typography.bodySmall,
                                 color = androidx.compose.ui.graphics.Color.White,
                             )
@@ -102,63 +110,73 @@ fun MenuScreen(
             )
         },
     ) { padding ->
-        when (val state = uiState) {
-            is UiState.Loading -> LoadingState(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding),
-            )
-            is UiState.Error -> ErrorState(
-                message = state.message,
-                onRetry = viewModel::refresh,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding),
-            )
-            is UiState.Success -> {
-                val items = state.data.items
-                if (items.isEmpty()) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(padding),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        androidx.compose.material3.Surface(
-                            shape = MaterialTheme.shapes.medium,
-                            color = MaterialTheme.colorScheme.surfaceVariant,
-                            contentColor = androidx.compose.ui.graphics.Color.Black,
-                            shadowElevation = 2.dp,
-                            modifier = Modifier.padding(24.dp),
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding),
+        ) {
+            if (readOnly) {
+                HistoricalReadOnlyBanner(
+                    eventName = eventName,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 6.dp),
+                )
+            }
+
+            when (val state = uiState) {
+                is UiState.Loading -> LoadingState(
+                    modifier = Modifier.fillMaxSize(),
+                )
+                is UiState.Error -> ErrorState(
+                    message = state.message,
+                    onRetry = viewModel::refresh,
+                    modifier = Modifier.fillMaxSize(),
+                )
+                is UiState.Success -> {
+                    val items = state.data.items
+                    if (items.isEmpty()) {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center,
                         ) {
-                            Text(
-                                text = stringResource(R.string.menu_empty),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = androidx.compose.ui.graphics.Color.Black,
-                                modifier = Modifier.padding(horizontal = 20.dp, vertical = 14.dp),
-                            )
+                            androidx.compose.material3.Surface(
+                                shape = MaterialTheme.shapes.medium,
+                                color = MaterialTheme.colorScheme.surfaceVariant,
+                                contentColor = androidx.compose.ui.graphics.Color.Black,
+                                shadowElevation = 2.dp,
+                                modifier = Modifier.padding(24.dp),
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.menu_empty),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = androidx.compose.ui.graphics.Color.Black,
+                                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 14.dp),
+                                )
+                            }
                         }
-                    }
-                } else {
-                    LazyColumn(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(padding)
-                            .padding(horizontal = 16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                        contentPadding = androidx.compose.foundation.layout.PaddingValues(vertical = 16.dp),
-                    ) {
-                        items(items, key = { it.id }) { item ->
-                            MenuItemCard(
-                                item = item,
-                                onClick = {
-                                    dialogItem = item
-                                    viewModel.onMenuItemClicked(item)
-                                },
-                                onReviews = {
-                                    reviewsItem = item
-                                },
-                            )
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = 16.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                            contentPadding = androidx.compose.foundation.layout.PaddingValues(vertical = 16.dp),
+                        ) {
+                            items(items, key = { it.id }) { item ->
+                                MenuItemCard(
+                                    item = item,
+                                    readOnly = readOnly,
+                                    onClick = {
+                                        viewModel.onMenuItemClicked(item)
+                                        dialogItem = item
+                                    },
+                                    onReviews = {
+                                        viewModel.onMenuItemClicked(item)
+                                        reviewsItem = item
+                                    },
+                                )
+                            }
                         }
                     }
                 }
@@ -167,10 +185,23 @@ fun MenuScreen(
     }
 
     dialogItem?.let { item ->
+        val lang = LocalLanguage.current.value
+        val desc = item.description.pick(lang)
+        val title = if (lang == Language.EN && desc.isNotBlank()) desc else item.name
         BilingualDescriptionDialog(
-            title = item.name,
+            title = title,
             description = item.description,
             onDismiss = { dialogItem = null },
+            extra = {
+                Text(
+                    text = if (readOnly)
+                        stringResource(R.string.menu_historical_recipe)
+                    else
+                        stringResource(R.string.menu_available, item.availablePlates),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            },
         )
     }
 
@@ -179,26 +210,24 @@ fun MenuScreen(
             targetType = ReviewTargetType.MENU_ITEM,
             targetId = item.id,
             standId = cantinaId,
-            targetTitle = item.name,
+            targetTitle = if (cantinaTitle.isNotBlank()) "${item.name} ($cantinaTitle)" else item.name,
+            readOnly = readOnly,
             onDismiss = { reviewsItem = null },
         )
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun MenuItemCard(
     item: MenuItem,
+    readOnly: Boolean,
     onClick: () -> Unit,
     onReviews: () -> Unit,
 ) {
-    val lang by LocalLanguage.current
+    val lang = LocalLanguage.current.value
     val itemDesc = item.description.pick(lang)
-    val displayName = if (lang == Language.EN && item.description.en.isNotBlank()) {
-        item.description.en
-    } else {
-        item.name
-    }
-
+    val displayName = if (lang == Language.EN && itemDesc.isNotBlank()) itemDesc else item.name
     Card(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
@@ -217,14 +246,22 @@ private fun MenuItemCard(
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.weight(1f, fill = false),
                 )
-                Text(
-                    text = stringResource(R.string.menu_available, item.availablePlates),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = if (item.availablePlates > 0)
-                        MaterialTheme.colorScheme.primary
-                    else
-                        MaterialTheme.colorScheme.error,
-                )
+                if (readOnly) {
+                    Text(
+                        text = stringResource(R.string.menu_historical_recipe),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                } else {
+                    Text(
+                        text = stringResource(R.string.menu_available, item.availablePlates),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = if (item.availablePlates > 0)
+                            MaterialTheme.colorScheme.primary
+                        else
+                            MaterialTheme.colorScheme.error,
+                    )
+                }
             }
             if (itemDesc.isNotBlank() && itemDesc != displayName) {
                 Text(

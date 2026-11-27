@@ -67,4 +67,9 @@
     <string name="reviews_comment_label">Your comment (optional)</string>
     <string name="reviews_action_submit">Submit review</string>
     <string name="reviews_submitted_pending">Review submitted! It will be visible after moderator approval.</string>
+    <string name="action_open_cantine_readonly">Explore edition (Read-only)</string>
+    <string name="archive_readonly_banner_title">Historical Archive — Read-only</string>
+    <string name="archive_readonly_banner_subtitle">You are browsing a past edition: stands, historical menus and reviews are in read-only mode.</string>
+    <string name="reviews_readonly_notice">Past edition — historical reviews are available in read-only mode.</string>
+    <string name="menu_historical_recipe">Historical edition dish</string>
 </resources>
