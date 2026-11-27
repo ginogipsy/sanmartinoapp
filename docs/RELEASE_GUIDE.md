@@ -61,9 +61,9 @@ Sui branch di sviluppo (**`develop`**, **`feature/*`**), la pipeline si ferma do
 
 ---
 
-## 🧪 Qualità del Codice (Qodana)
+## 🧪 Qualità del Codice
 
-Ogni commit ed ogni Pull Request viene analizzata automaticamente da **JetBrains Qodana**.
+Ogni commit ed ogni Pull Request viene analizzata automaticamente da Android Lint (`./gradlew lintDebug`) e Kotlin compiler check in `ci-cd.yml`.
 - Il report è consultabile nella tab **Checks** della Pull Request.
 - Assicuratevi che non vengano introdotti nuovi "Critical" o "High" issues prima del merge.
 
